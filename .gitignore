@@ -1,0 +1,11 @@
+
+node_modules
+bower_components
+*.pyc
+.DS_Store
+/venv
+__pycache__/
+*~
+/.vscode/
+/src/.vscode
+/src/flask_secret.py
