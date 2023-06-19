@@ -95,8 +95,9 @@ def get_project_name():
 def get_redirect_uri():
     # get the valid redirect URL from the datastore setting
     # get_base_url()
-    base_url = f"http://{routes.get_auth_host_name()}"
-    return base_url + '/google/auth'
+    base_url = routes.get_url_root()
+    app.logger.info("Base URL:" + base_url)
+    return base_url + 'google/auth'
 
 
 def get_base_url():
