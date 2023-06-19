@@ -9,3 +9,5 @@ __pycache__/
 /.vscode/
 /src/.vscode
 /src/flask_secret.py
+svc.json
+
