@@ -181,9 +181,10 @@ def favicon_static():
 def root():
     # get the sandbox URL from environment
     sandbox_url = os.environ.get('PUBLIC_RUNNER_GUEST_URL')
+    wasm_url = os.environ.get('PUBLIC_WASM_GUEST_URL')
     docs_home_url = os.environ.get('PUBLIC_DOCS_HOME')  # get docs home
     base_url = get_url_root()
-    return flask.render_template('index.html', sandbox_url=sandbox_url, docs_home_url=docs_home_url, base_url=base_url)
+    return flask.render_template('index.html', sandbox_url=sandbox_url, docs_home_url=docs_home_url, base_url=base_url, wasm_url=wasm_url)
 
 #
 # Here are some utilities for validating names, hosts, and usernames

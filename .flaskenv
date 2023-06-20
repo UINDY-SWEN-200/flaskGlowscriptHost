@@ -9,5 +9,6 @@ FLASK_RUN_PORT=8080
 CLIENT_SECRET_VERSION=1
 PUBLIC_RUNNER_GUEST_URL=http://localhost:8090/untrusted/run.html
 PUBLIC_DOCS_HOME=http://localhost:8070/docs/VPythonDocs/index.html
+PUBLIC_WASM_GUEST_URL=http://localhost:5173
 GOOGLE_APPLICATION_CREDENTIALS=svc.json
 GOOGLE_CLOUD_PROJECT=glowscript-py38

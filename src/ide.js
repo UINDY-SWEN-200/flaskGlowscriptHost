@@ -45,6 +45,11 @@ $(function () {
         // 2 entries: 'JavaScript 3.2', 'GlowScript 3.2'
         // 3 entries: 'GlowScript 3.2 VPython', 'GlowScript 3.2 JavaScript', 'Web VPython 3.2', Web VPython 3.3dev
         header = header.toLowerCase()
+        if (header.indexOf('wasm') >= 0) {
+            ret.lang = 'wasm'
+            ret.ok = true
+            return ret
+        }
         header = header.split(" ")
         if (header.length === undefined) return ret
         if (header[0] == ' ') return ret
@@ -1075,9 +1080,6 @@ $(function () {
             // Validate that the browser supports Object.defineProperty (not ie8)
             Object.defineProperty({}, "foo", {get: function() { return "bar" }})
 
-            var untrusted_src = window.public_runner_guest_url
-            var guest_url = new URL(untrusted_src)
-            untrusted_origin = guest_url.origin
 
             var ready = false
             var untrusted_frame = page.find("iframe.untrusted-frame")
@@ -1093,8 +1095,6 @@ $(function () {
                 cb() 
             })
 
-            untrusted_frame.prop("src", untrusted_src)  // Start loading the run script while we wait for the program...
-
             var $dialog = null
             onNavigate.on( checkDialog )
 
@@ -1103,9 +1103,18 @@ $(function () {
             	if ("error" in progData) {
             		alert(progData.error)
             	} else {
-	            	page.find(".prog-datetime").text(date_to_string(progData.datetime))
 	                var header = parseVersionHeader( progData.source )
 	                if (header.ok) {
+                        var untrusted_src = window.public_runner_guest_url
+                        var guest_url = new URL(untrusted_src)
+                        untrusted_origin = guest_url.origin
+                        if (header.lang === 'wasm') {
+                            untrusted_src = window.public_wasm_guest_url
+                            guest_url = new URL(untrusted_src)
+                            untrusted_origin = guest_url.origin
+                        }
+                        untrusted_frame.prop("src", untrusted_src)  // Start loading the run script while we wait for the program...
+                        page.find(".prog-datetime").text(date_to_string(progData.datetime))
 	                    haveScreenshot = progData.screenshot != ""
 	                    sendMessage(JSON.stringify({ program: header.source, version: header.version, lang: header.lang, unpackaged: header.unpackaged, autoscreenshot:isWritable && !haveScreenshot }))
 	                } else {
