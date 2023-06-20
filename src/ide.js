@@ -45,7 +45,7 @@ $(function () {
         // 2 entries: 'JavaScript 3.2', 'GlowScript 3.2'
         // 3 entries: 'GlowScript 3.2 VPython', 'GlowScript 3.2 JavaScript', 'Web VPython 3.2', Web VPython 3.3dev
         header = header.toLowerCase()
-        if (header.indexOf('wasm') >= 0) {
+        if (header.indexOf('wasm') >= 0) { // if we have wasm, then use the wasm runner....
             ret.lang = 'wasm'
             ret.ok = true
             return ret
