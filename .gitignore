@@ -1,4 +1,3 @@
-
 node_modules
 bower_components
 *.pyc
@@ -9,5 +8,5 @@ __pycache__/
 /.vscode/
 /src/.vscode
 /src/flask_secret.py
+# please never check svc.json into the repo!
 svc.json
-
