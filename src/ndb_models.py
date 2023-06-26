@@ -1,5 +1,50 @@
 
 from google.cloud import ndb
+import os
+
+emulator = os.environ.get('DATASTORE_EMULATOR_HOST')
+
+def ndb_wsgi_middleware(wsgi_app):
+    """
+    This is helpful for Flask and NDB to play nice together.
+
+    https://cloud.google.com/appengine/docs/standard/python3/migrating-to-cloud-ndb
+
+    We need to be able to access NDB in the application context.
+    If we're running a local datastore, make up a dummy project name.
+    """
+
+    project = emulator and 'glowscript-dev' or None
+
+    # for user data, folders, and programs
+    client = ndb.Client(project=project)
+
+    def middleware(environ, start_response):
+
+        if False and environ.get('REQUEST_METHOD') == 'PUT':
+            #
+            # this can be useful for debugging late exceptions in PUT operations
+            # just remove 'False' above.
+            #
+
+            import pdb
+            pdb.set_trace()
+
+        with client.context():
+            return wsgi_app(environ, start_response)
+
+    return middleware
+
+#
+# Now let's deal with the app
+#
+
+def wrap_app(app):
+    app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)  # Wrap the app in middleware.
+    return app
+
+def get_db():
+    return ndb
 
 class User (ndb.Model):
     """A single user of the IDE"""
