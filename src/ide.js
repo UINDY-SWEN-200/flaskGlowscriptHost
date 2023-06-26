@@ -48,6 +48,7 @@ $(function () {
         if (header.indexOf('wasm') >= 0) { // if we have wasm, then use the wasm runner....
             ret.lang = 'wasm'
             ret.ok = true
+            ret.source = '#\n' + ret.source // make line numbers work for wasm
             return ret
         }
         header = header.split(" ")
