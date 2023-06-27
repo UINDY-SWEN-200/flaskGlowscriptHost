@@ -43,10 +43,7 @@ import zipfile
 from io import BytesIO
 import json
 
-if os.environ.get('MONGO_URL'):
-    from . import mongo_models as db
-else:
-    from . import ndb_models as db
+import db_translate as db
 
 localport = '8080'     # normally 8080
 weblocs_safe = ["localhost:"+localport, "127.0.0.1:" +
