@@ -19,6 +19,10 @@ class User(Document):
             time_field="joinDate",  # Required
         )
 
+    @classmethod
+    def query(cond):
+        return User.find(cond)
+
 
 class Folder (Document):
     """A collection of programs created by a user"""
