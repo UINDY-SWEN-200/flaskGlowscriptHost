@@ -10,3 +10,4 @@ __pycache__/
 /src/flask_secret.py
 # please never check svc.json into the repo!
 svc.json
+foo.py

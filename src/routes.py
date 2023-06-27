@@ -32,9 +32,7 @@ import re
 from . import app, auth
 import os
 from datetime import datetime
-from .models import User, Program, Folder, Setting
 from google.auth.transport import requests
-from google.cloud import ndb
 import urllib.parse
 import functools
 import traceback
@@ -44,6 +42,12 @@ import cgi
 import zipfile
 from io import BytesIO
 import json
+
+if os.environ.get('MONGO_URL'):
+    from . import mongo_models as db
+else:
+    from . import ndb_models as db
+
 localport = '8080'     # normally 8080
 weblocs_safe = ["localhost:"+localport, "127.0.0.1:" +
                 localport,]  # only need these for local development
@@ -67,6 +71,7 @@ unreserved = chrange('A', 'Z') | chrange(
 #
 
 module_cache = {}  # cache some things, like ide.js, so we don't need to keep reloading them
+
 
 def load_idejs():
     try:
@@ -348,7 +353,7 @@ def ApiUser(username):
             # TODO: Make sure *nothing* exists in the database with an ancestor of this user, just to be sure
 
             db_user = User(id=user, email=email,
-                            secret=base64.urlsafe_b64encode(os.urandom(16)))
+                           secret=base64.urlsafe_b64encode(os.urandom(16)))
             db_user.put()
 
             db_my_programs = Folder(
@@ -501,7 +506,7 @@ def ApiUserFolderProgram(username, foldername, programname):
                     "error": str('The program "'+name+'" is in a private folder\nto which you do not have access.')}
         else:
             db_program = db.Key("User", user, "Folder",
-                                  folder, "Program", name).get()
+                                folder, "Program", name).get()
             if not db_program:
                 return {"user": user, "folder": folder, "name": name,
                         "error": str(user+'/'+folder+'/'+name+' does not exist.')}
@@ -524,7 +529,7 @@ def ApiUserFolderProgram(username, foldername, programname):
             changes = {}
 
         db_program = db.Key("User", user, "Folder",
-                              folder, "Program", program).get()
+                            folder, "Program", program).get()
 
         if not db_program:  # if not db_program already, this is a request to create a new program
             db_folder = db.Key("User", user, "Folder", folder).get()
@@ -549,7 +554,7 @@ def ApiUserFolderProgram(username, foldername, programname):
             return flask.make_response("Unauthorized", 401)
 
         db_program = db.Key("User", user, "Folder",
-                              folder, "Program", name).get()
+                            folder, "Program", name).get()
         if db_program:
             db_program.key.delete()
 
@@ -582,7 +587,7 @@ def ApiUserFolderProgramDownload(username, foldername, programname, optionname):
         if not pub:
             return flask.make_response('Unauthorized', 405)
         db_program = db.Key("User", user, "Folder",
-                              folder, "Program", name).get()
+                            folder, "Program", name).get()
         if not db_program:
             return flask.make_response('Not found', 404)
         source = db_program.source
@@ -667,7 +672,7 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
     db_program = Program(parent=db_folder.key, id=program)
 
     db_program_old = db.Key("User", user, "Folder",
-                              oldfolder, "Program", oldprogram).get()
+                            oldfolder, "Program", oldprogram).get()
     if not db_program_old:
         return flask.make_response('Old program not found', 404)
 
