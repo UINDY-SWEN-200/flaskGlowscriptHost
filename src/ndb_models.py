@@ -1,5 +1,51 @@
 
 from google.cloud import ndb
+import os
+
+emulator = os.environ.get('DATASTORE_EMULATOR_HOST')
+
+
+def ndb_wsgi_middleware(wsgi_app):
+    """
+    This is helpful for Flask and NDB to play nice together.
+
+    https://cloud.google.com/appengine/docs/standard/python3/migrating-to-cloud-ndb
+
+    We need to be able to access NDB in the application context.
+    If we're running a local datastore, make up a dummy project name.
+    """
+
+    project = emulator and 'glowscript-dev' or None
+
+    # for user data, folders, and programs
+    client = ndb.Client(project=project)
+
+    def middleware(environ, start_response):
+
+        if False and environ.get('REQUEST_METHOD') == 'PUT':
+            #
+            # this can be useful for debugging late exceptions in PUT operations
+            # just remove 'False' above.
+            #
+
+            import pdb
+            pdb.set_trace()
+
+        with client.context():
+            return wsgi_app(environ, start_response)
+
+    return middleware
+
+#
+# Now let's deal with the app
+#
+
+
+def wrap_app(app):
+    # Wrap the app in middleware.
+    app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
+    return app
+
 
 class User (ndb.Model):
     """A single user of the IDE"""
@@ -10,11 +56,13 @@ class User (ndb.Model):
     gaeUser = ndb.UserProperty()
     secret = ndb.StringProperty()
 
+
 class Folder (ndb.Model):
     """A collection of programs created by a user"""
     # Parent is a User
     # key is the folder's name (unique for a user)
     isPublic = ndb.BooleanProperty()
+
 
 class Program (ndb.Model):
     """A single program"""
@@ -23,7 +71,8 @@ class Program (ndb.Model):
     description = ndb.StringProperty()
     source = ndb.TextProperty()
     screenshot = ndb.BlobProperty()
-    datetime = ndb.DateTimeProperty() # this is UTC date and time
+    datetime = ndb.DateTimeProperty()  # this is UTC date and time
+
 
 class Setting(ndb.Model):
     """A setting value"""
@@ -42,7 +91,7 @@ class Setting(ndb.Model):
         ndb_setting = Setting.cache.get(name)
 
         if not ndb_setting:
-            ndb_setting = ndb.Key("Setting",name).get()
+            ndb_setting = ndb.Key("Setting", name).get()
             if ndb_setting:
                 Setting.cache[name] = ndb_setting
             else:
