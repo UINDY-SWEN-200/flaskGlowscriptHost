@@ -93,14 +93,14 @@ class NDB_DBGlue(DBGlue):
         """
         Create a new user, and two default folders.
         """
-        db_user = ndb_models.User(key=user_id, email=email, secret=secret)
+        db_user = ndb_models.User(id=user_id, email=email, secret=secret)
         db_user.put()
         db_my_programs = ndb_models.Folder(
-            parent=db_user.key, key="MyPrograms", isPublic=True)
+            parent=db_user.key, id="MyPrograms", isPublic=True)
         db_my_programs.put()
 
         db_my_programs = ndb_models.Folder(
-            parent=db_user.key, key="Private", isPublic=False)
+            parent=db_user.key, id="Private", isPublic=False)
         db_my_programs.put()
         return db_user
 
@@ -111,7 +111,7 @@ class NDB_DBGlue(DBGlue):
         return ndb_models.Folder.query(ancestor=ndb_models.ndb.Key("User", user, "Folder", folder)).get()
 
     def new_folder(self, user_obj, folder_name, public):
-        new_fold=ndb_models.Folder(parent=user_obj.key, key=folder_name, isPublic=public)
+        new_fold=ndb_models.Folder(parent=user_obj.key, id=folder_name, isPublic=public)
         new_fold.put()
         return new_fold
 
@@ -125,7 +125,7 @@ class NDB_DBGlue(DBGlue):
         return ndb_models.ndb.Key("User", user, "Folder", folder, "Program", program).get()
 
     def new_program(self, folder_obj, program_name):
-        new_prog=ndb_models.Program(parent=folder_obj.key, key=program_name)
+        new_prog=ndb_models.Program(parent=folder_obj.key, id=program_name)
         new_prog.put()
         return new_prog
 
