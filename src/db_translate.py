@@ -49,6 +49,9 @@ class NDB_DBGlue(DBGlue):
         ndb_models.wrap_app(app)
         return app
 
+    def get_id(self, obj):
+        return obj.key.id()
+
     def get_user(self, email):
         return ndb_models.User.query(ndb_models.User.email == email).get()
 
@@ -56,16 +59,36 @@ class NDB_DBGlue(DBGlue):
         return ndb_models.ndb.Key("User", username).get()
 
     def new_user(self, user_id, email, secret):
-        pass
+        """
+        Create a new user, and two default folders.
+        """
+        user = ndb_models.User(id=user_id, email=email, secret=secret)
+        user.put()
+        db_my_programs = ndb_models.Folder(
+            parent=db_user.key, id="MyPrograms", isPublic=True)
+        db_my_programs.put()
 
-    def folders(user_id):
-        pass
+        db_my_programs = ndb_models.Folder(
+            parent=db_user.key, id="Private", isPublic=False)
+        db_my_programs.put()
+        return user
 
-    def new_folder(user_id, folder_name, folder_description, private):
-        pass
+    def folders(self, user_id):
+        return ndb_models.Folder.query(ancestor=ndb.Key("User", user))
 
-    def programs(user_id, folder_id):
-        pass
+    def folder(self, user, folder):
+        return ndb_models.Folder.query(ancestor=ndb_models.Key("User", user, "Folder", folder)).get()
+
+    def new_folder(self, user, folder_name, private):
+        new_fold=ndb_models.Folder(parent=user_obj.key, name=folder_name, isPublic=private)
+        new_fold.put()
+        return new_fold
+
+    def delete_folder(self, folder_obj):
+        folder_obj.key.delete()
+
+    def programs(self, user_obj, folder_obj):
+        return ndb_models.Program.query(ancestor=ndb_models.Key("User", user_obj, "Folder", folder_obj))
 
     def update_program(user_id, folder_id, program_id, program_name, program_description):
         pass

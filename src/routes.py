@@ -153,7 +153,6 @@ def root():
 # Here are some utilities for validating names, hosts, and usernames
 #
 
-
 def validate_names(*names):
     # TODO: check that the encoding is 'normalized' (e.g. that unreserved characters are NOT percent-escaped).
     for name in names:
@@ -161,7 +160,6 @@ def validate_names(*names):
             if c not in unreserved and c != "%":
                 return False
     return True
-
 
 def get_auth_host_name():
     return flask.request.headers.get('Host')
@@ -349,20 +347,8 @@ def ApiUser(username):
 
             # TODO: Make sure *nothing* exists in the database with an ancestor of this user, just to be sure
 
-            db_user = User(id=user, email=email,
-                           secret=base64.urlsafe_b64encode(os.urandom(16)))
-            db_user.put()
-
-            db_my_programs = Folder(
-                parent=db_user.key, id="MyPrograms", isPublic=True)
-            db_my_programs.put()
-
-            db_my_programs = Folder(
-                parent=db_user.key, id="Private", isPublic=False)
-            db_my_programs.put()
-
+            db_user = db.new_user(user, email, base64.urlsafe_b64encode(os.urandom(16)))
             return {}
-
     else:
         return flask.make_response('Invalid API operation', 400)
 
@@ -386,14 +372,14 @@ def ApiUserFolders(username):
 
     folders = []
     publics = []
-    for k in Folder.query(ancestor=ndb.Key("User", user)):
+    for k in db.folders(user):
         # if k.isPublic != None and not k.isPublic and gaeUser != db_user.gaeUser: continue
         if k.isPublic != None and not k.isPublic:  # private folder
             if override(logged_in_email):
                 pass
             elif logged_in_email != folder_owner.email:
                 continue
-        folders.append(k.key.id())
+        folders.append(db.get_id(k))
         publics.append(k.isPublic)
     return {"user": user, "folders": folders, "publics": publics}
 
@@ -418,28 +404,27 @@ def ApiUserFolder(username, foldername):
             return flask.make_response("Unauthorized", 401)
 
         public = True
-        value = flask.request.values.get("program")
+        value = flask.request.values.get("program") # why program?  
 
         if value:
             public = json.loads(value).get('public')
 
-        folder = Folder(parent=db_user.key, id=folder, isPublic=public)
-        folder.put()
+        folder = db.new_folder(db_user, folder, isPublic=public)
 
         return {}
 
     elif flask.request.method == 'DELETE':
 
-        db_folder = ndb.Key("User", user, "Folder", folder).get()
+        db_folder = db.folder(user, folder)
         if not db_folder:
             return flask.make_response("Not found", 403)
         program_count = 0
-        for _ in Program.query(ancestor=ndb.Key("User", user, "Folder", folder)):
+        for _ in db.programs(user, folder):
             program_count += 1
 
         if program_count > 0:
             return flask.make_response("There are programs here", 409)
-        db_folder.key.delete()
+        db.delete_folder(db_folder)
         return {}
 
     else:
@@ -456,10 +441,10 @@ def ApiUserFolderPrograms(username, foldername):
         code = pup.args[1]
         return flask.make_response(errorMsg, code)
 
-    user, folder = names
+    username, folder = names
 
-    db_folder = ndb.Key("User", user, "Folder", folder).get()
-    db_user = ndb.Key("User", user).get()
+    db_folder = db.folder(user, folder)
+    db_user = db.get_user_byusername(username)
     try:
         # before March 2015, isPublic wasn't set
         pub = db_folder.isPublic is None or db_folder.isPublic or email == db_user.email
@@ -473,7 +458,7 @@ def ApiUserFolderPrograms(username, foldername):
             {"name": p.key.id(),
              "screenshot": str(p.screenshot and p.screenshot.decode('utf-8') or ""),
              "datetime": str(p.datetime)
-             } for p in Program.query(ancestor=ndb.Key("User", user, "Folder", folder))]
+             } for p in db.programs(user, folder)]
         return {"user": user, "folder": folder, "programs": programs}
 
 
