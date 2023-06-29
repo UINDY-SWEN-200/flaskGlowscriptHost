@@ -5,7 +5,6 @@ import abc
 
 MONGO_URL = os.environ.get('MONGO_URL', None)
 
-
 class DBGlue(abc.ABC):
     """     
     This class is used to translate the database calls from the
@@ -42,7 +41,7 @@ class DBGlue(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def new_folder(self, user_obj, folder_name, private):
+    def new_folder(self, user_obj, folder_name, public):
         pass
 
     @abc.abstractmethod
@@ -67,6 +66,10 @@ class DBGlue(abc.ABC):
 
     @abc.abstractmethod
     def delete_program(self, program_obj):
+        pass
+
+    @abc.abstractmethod
+    def set_datetime(self, obj, dt):
         pass
 
 
@@ -90,14 +93,14 @@ class NDB_DBGlue(DBGlue):
         """
         Create a new user, and two default folders.
         """
-        db_user = ndb_models.User(id=user_id, email=email, secret=secret)
+        db_user = ndb_models.User(key=user_id, email=email, secret=secret)
         db_user.put()
         db_my_programs = ndb_models.Folder(
-            parent=db_user.key, id="MyPrograms", isPublic=True)
+            parent=db_user.key, key="MyPrograms", isPublic=True)
         db_my_programs.put()
 
         db_my_programs = ndb_models.Folder(
-            parent=db_user.key, id="Private", isPublic=False)
+            parent=db_user.key, key="Private", isPublic=False)
         db_my_programs.put()
         return db_user
 
@@ -107,8 +110,8 @@ class NDB_DBGlue(DBGlue):
     def folder(self, user, folder):
         return ndb_models.Folder.query(ancestor=ndb_models.ndb.Key("User", user, "Folder", folder)).get()
 
-    def new_folder(self, user_obj, folder_name, private):
-        new_fold=ndb_models.Folder(parent=user_obj.key, id=folder_name, isPublic=private)
+    def new_folder(self, user_obj, folder_name, public):
+        new_fold=ndb_models.Folder(parent=user_obj.key, key=folder_name, isPublic=public)
         new_fold.put()
         return new_fold
 
@@ -122,7 +125,7 @@ class NDB_DBGlue(DBGlue):
         return ndb_models.ndb.Key("User", user, "Folder", folder, "Program", program).get()
 
     def new_program(self, folder_obj, program_name):
-        new_prog=ndb_models.Program(parent=folder_obj.key, id=program_name)
+        new_prog=ndb_models.Program(parent=folder_obj.key, key=program_name)
         new_prog.put()
         return new_prog
 
@@ -132,10 +135,86 @@ class NDB_DBGlue(DBGlue):
     def delete_program(self, program_obj):
         program_obj.key.delete()
 
-class MONGO_DBGlue(DBGlue):
-    def __init__(self):
-        pass
+    def set_datetime(self, obj, dt):
+        obj.datetime = dt
 
+
+class MONGO_DBGlue(DBGlue):
+
+    def wrap_app(self, app):
+        # init the Mongo client
+        self.client =  mongo_models.init_client(MONGO_URL)
+        return app
+
+    def get_id(self, obj):
+        return obj.key
+
+    def get_user(self, email):
+        return mongo_models.User.find({"email":email}).first_or_none()
+
+    def get_user_byusername(self, username):
+        return mongo_models.User.find({"key":username}).first_or_none()
+
+    def new_user(self, user_id, email, secret):
+        """
+        Create a new user, and two default folders.
+        """
+        db_user = mongo_models.User(key=user_id, email=email, secret=secret)
+        db_user.insert()
+
+        db_my_programs = mongo_models.Folder(parentID=str(db_user.id), key="MyPrograms", isPublic=True)
+        db_my_programs.insert()
+
+        db_my_programs = mongo_models.Folder(parentID=str(db_user.id), key="Private", isPublic=False)
+        db_my_programs.insert()
+
+        return db_user
+
+    def folders(self, user_id):
+        db_user = self.get_user_byusername(user_id)
+        if not db_user:
+            raise Exception("User not found")
+        return mongo_models.Folder.find({"parentID":str(db_user.id)}).to_list()
+
+    def folder(self, user_id, folder):
+        db_user = self.get_user_byusername(user_id)
+        if not db_user:
+            raise Exception("User not found")
+        return mongo_models.Folder.find({"parentID":str(db_user.id), "key":folder}).first_or_none()
+
+    def new_folder(self, user_obj, folder_name, public):
+        new_fold=mongo_models.Folder(parentID=str(user_obj.id), key=folder_name, isPublic=public)
+        new_fold.insert()
+        return new_fold
+
+    def delete_folder(self, folder_obj):
+        folder_obj.delete()
+
+    def programs(self, user_id, folder):
+        db_folder = self.folder(user_id, folder)
+        if not db_folder:
+            raise Exception("Folder not found")
+        return mongo_models.Program.find({"parentID":str(db_folder.id)}).to_list()
+
+    def program(self, user_id, folder, program):
+        db_folder = self.folder(user_id, folder)
+        if not db_folder:
+            raise Exception("Folder not found")
+        return mongo_models.Program.find({"parentID":str(db_folder.id), "key":program}).first_or_none()
+
+    def new_program(self, folder_obj, program_name):
+        new_prog=mongo_models.Program(parentID=str(folder_obj.id), key=program_name)
+        new_prog.insert()
+        return new_prog
+
+    def put_program(self, program_obj):
+        program_obj.save()
+
+    def delete_program(self, program_obj):
+        program_obj.delete()
+
+    def set_datetime(self, obj, dt):
+        obj.date_time = dt
 
 def setupDB():
     """ If MONGO_URL is set, use MongoDB, otherwise use NDB """

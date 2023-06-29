@@ -298,7 +298,7 @@ def api_login():
         email = auth.get_user_info().get('email')
         db_user = db.get_user(email)
         if db_user:
-            return {'state': 'logged_in', 'username': db_user.key.id(), 'secret': db_user.secret, 'logout_url': '/google/logout'}
+            return {'state': 'logged_in', 'username': db.get_id(db_user), 'secret': db_user.secret, 'logout_url': '/google/logout'}
         else:
             nickname = email
             if "@" in nickname:
@@ -409,7 +409,7 @@ def ApiUserFolder(username, foldername):
         if value:
             public = json.loads(value).get('public')
 
-        folder = db.new_folder(db_user, folder, private= not public)
+        folder = db.new_folder(db_user, folder, public= public)
 
         return {}
 
@@ -455,7 +455,7 @@ def ApiUserFolderPrograms(username, foldername):
                 "error": str('The folder "'+user+'/'+folder+'" is a private folder\nto which you do not have access.')}
     else:
         programs = [
-            {"name": p.key.id(),
+            {"name": db.get_id(p),
              "screenshot": str(p.screenshot and p.screenshot.decode('utf-8') or ""),
              "datetime": str(p.datetime)
              } for p in db.programs(username, folder)]
@@ -523,7 +523,7 @@ def ApiUserFolderProgram(username, foldername, programname):
         if "screenshot" in changes:
             db_program.screenshot = changes["screenshot"].encode('utf-8')
 
-        db_program.datetime = datetime.now()
+        db.set_datetime(db_program,datetime.now())
         db_program.description = ""  # description currently not used
         db.put_program(db_program)
         return {}
@@ -533,10 +533,9 @@ def ApiUserFolderProgram(username, foldername, programname):
         if not authorize_user(user):
             return flask.make_response("Unauthorized", 401)
 
-        db_program = ndb.Key("User", user, "Folder",
-                            folder, "Program", name).get()
+        db_program = db.program(user, folder, name)
         if db_program:
-            db_program.key.delete()
+            db.delete_program(db_program)
 
         return {}
 
@@ -667,7 +666,7 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
 
     db_program.source = db_program_old.source
     db_program.screenshot = db_program_old.screenshot
-    db_program.datetime = db_program_old.datetime
+    db.set_datetime(db_program,db_program_old.datetime)
     db_program.description = ""  # description currently not used
     db.put_program(db_program)
 
