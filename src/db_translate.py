@@ -10,7 +10,7 @@ class DBGlue(abc.ABC):
     """     
     This class is used to translate the database calls from the
     application to the database. This allows for a single point
-    of change if the database is changed in the future.
+    of translation between the application and the database.
     """
 
     @abc.abstractmethod
@@ -18,7 +18,15 @@ class DBGlue(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_user(self, user_id):
+    def get_id(self, obj):
+        pass
+
+    @abc.abstractmethod
+    def get_user(self, email):
+        pass
+
+    @abc.abstractmethod
+    def get_user_byusername(self, username):
         pass
 
     @abc.abstractmethod
@@ -26,19 +34,39 @@ class DBGlue(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def folders(user_id):
+    def folders(self, user_id):
         pass
 
     @abc.abstractmethod
-    def new_folder(user_id, folder_name, folder_description, private):
+    def folder(self, user, folder):
         pass
 
     @abc.abstractmethod
-    def programs(user_id, folder_id):
+    def new_folder(self, user_obj, folder_name, private):
         pass
 
     @abc.abstractmethod
-    def update_program(user_id, folder_id, program_id, program_name, program_description):
+    def delete_folder(self, folder_obj):
+        pass
+
+    @abc.abstractmethod
+    def programs(self, user, folder):
+        pass
+
+    @abc.abstractmethod
+    def program(self, user, folder, program):
+        pass
+
+    @abc.abstractmethod
+    def new_program(self, folder_obj, program_name):
+        pass
+
+    @abc.abstractmethod
+    def put_program(self, program_obj):
+        pass
+
+    @abc.abstractmethod
+    def delete_program(self, program_obj):
         pass
 
 
@@ -62,8 +90,8 @@ class NDB_DBGlue(DBGlue):
         """
         Create a new user, and two default folders.
         """
-        user = ndb_models.User(id=user_id, email=email, secret=secret)
-        user.put()
+        db_user = ndb_models.User(id=user_id, email=email, secret=secret)
+        db_user.put()
         db_my_programs = ndb_models.Folder(
             parent=db_user.key, id="MyPrograms", isPublic=True)
         db_my_programs.put()
@@ -71,28 +99,38 @@ class NDB_DBGlue(DBGlue):
         db_my_programs = ndb_models.Folder(
             parent=db_user.key, id="Private", isPublic=False)
         db_my_programs.put()
-        return user
+        return db_user
 
     def folders(self, user_id):
-        return ndb_models.Folder.query(ancestor=ndb.Key("User", user))
+        return ndb_models.Folder.query(ancestor=ndb_models.ndb.Key("User", user_id))
 
     def folder(self, user, folder):
-        return ndb_models.Folder.query(ancestor=ndb_models.Key("User", user, "Folder", folder)).get()
+        return ndb_models.Folder.query(ancestor=ndb_models.ndb.Key("User", user, "Folder", folder)).get()
 
-    def new_folder(self, user, folder_name, private):
-        new_fold=ndb_models.Folder(parent=user_obj.key, name=folder_name, isPublic=private)
+    def new_folder(self, user_obj, folder_name, private):
+        new_fold=ndb_models.Folder(parent=user_obj.key, id=folder_name, isPublic=private)
         new_fold.put()
         return new_fold
 
     def delete_folder(self, folder_obj):
         folder_obj.key.delete()
 
-    def programs(self, user_obj, folder_obj):
-        return ndb_models.Program.query(ancestor=ndb_models.Key("User", user_obj, "Folder", folder_obj))
+    def programs(self, user, folder):
+        return ndb_models.Program.query(ancestor=ndb_models.ndb.Key("User", user, "Folder", folder))
 
-    def update_program(user_id, folder_id, program_id, program_name, program_description):
-        pass
+    def program(self, user, folder, program):
+        return ndb_models.ndb.Key("User", user, "Folder", folder, "Program", program).get()
 
+    def new_program(self, folder_obj, program_name):
+        new_prog=ndb_models.Program(parent=folder_obj.key, id=program_name)
+        new_prog.put()
+        return new_prog
+
+    def put_program(self, program_obj):
+        program_obj.put()
+
+    def delete_program(self, program_obj):
+        program_obj.key.delete()
 
 class MONGO_DBGlue(DBGlue):
     def __init__(self):
