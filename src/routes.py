@@ -43,7 +43,10 @@ import zipfile
 from io import BytesIO
 import json
 
-import db_translate as db
+from .ndb_models import Folder, User, Program
+from google.cloud import ndb
+
+from .db_translate import db
 
 localport = '8080'     # normally 8080
 weblocs_safe = ["localhost:"+localport, "127.0.0.1:" +
@@ -63,9 +66,7 @@ unreserved = chrange('A', 'Z') | chrange(
 # See documentation of db.Model at https://cloud.google.com/appengine/docs/python/datastore/modelclass
 # Newer ndb:                       https://cloud.google.com/appengine/docs/standard/python/ndb/db_to_n
 
-#
-# XXX add call here to init the database depending on configuration
-#
+app = db.wrap_app(app)
 
 module_cache = {}  # cache some things, like ide.js, so we don't need to keep reloading them
 
@@ -138,7 +139,6 @@ def favicon_static():
 # The root route
 #
 
-
 @app.route('/')
 @app.route('/index')
 def root():
@@ -177,7 +177,7 @@ def authorize_user(username):
 
     if auth.is_logged_in():
         logged_in_email = auth.get_user_info().get('email')
-        db_user = db.Key("User", username).get()
+        db_user = db.get_user_byusername(username)
         if not db_user or db_user.email != logged_in_email or flask.request.headers.get('X-CSRF-Token') != db_user.secret:
             print("user not authorized username:%s logged_in_email: %s db_user.email %s" % (
                 str(username), str(logged_in_email), str(db_user.email)))
@@ -262,7 +262,7 @@ def parseUrlPath(theRegexp, numGroups):
         logged_in_email = ''  # anonymous user
 
     if names:
-        folder_owner = db.Key("User", names[0]).get()
+        folder_owner = db.get_user_byusername(names[0])
 
     return names, folder_owner, logged_in_email
 
@@ -298,7 +298,7 @@ def check_for_escaped_hash():
 def api_login():
     if auth.is_logged_in():
         email = auth.get_user_info().get('email')
-        db_user = User.query().filter(User.email == email).get()
+        db_user = db.get_user(email)
         if db_user:
             return {'state': 'logged_in', 'username': db_user.key.id(), 'secret': db_user.secret, 'logout_url': '/google/logout'}
         else:
@@ -386,7 +386,7 @@ def ApiUserFolders(username):
 
     folders = []
     publics = []
-    for k in Folder.query(ancestor=db.Key("User", user)):
+    for k in Folder.query(ancestor=ndb.Key("User", user)):
         # if k.isPublic != None and not k.isPublic and gaeUser != db_user.gaeUser: continue
         if k.isPublic != None and not k.isPublic:  # private folder
             if override(logged_in_email):
@@ -430,11 +430,11 @@ def ApiUserFolder(username, foldername):
 
     elif flask.request.method == 'DELETE':
 
-        db_folder = db.Key("User", user, "Folder", folder).get()
+        db_folder = ndb.Key("User", user, "Folder", folder).get()
         if not db_folder:
             return flask.make_response("Not found", 403)
         program_count = 0
-        for _ in Program.query(ancestor=db.Key("User", user, "Folder", folder)):
+        for _ in Program.query(ancestor=ndb.Key("User", user, "Folder", folder)):
             program_count += 1
 
         if program_count > 0:
@@ -458,8 +458,8 @@ def ApiUserFolderPrograms(username, foldername):
 
     user, folder = names
 
-    db_folder = db.Key("User", user, "Folder", folder).get()
-    db_user = db.Key("User", user).get()
+    db_folder = ndb.Key("User", user, "Folder", folder).get()
+    db_user = ndb.Key("User", user).get()
     try:
         # before March 2015, isPublic wasn't set
         pub = db_folder.isPublic is None or db_folder.isPublic or email == db_user.email
@@ -473,7 +473,7 @@ def ApiUserFolderPrograms(username, foldername):
             {"name": p.key.id(),
              "screenshot": str(p.screenshot and p.screenshot.decode('utf-8') or ""),
              "datetime": str(p.datetime)
-             } for p in Program.query(ancestor=db.Key("User", user, "Folder", folder))]
+             } for p in Program.query(ancestor=ndb.Key("User", user, "Folder", folder))]
         return {"user": user, "folder": folder, "programs": programs}
 
 
@@ -492,7 +492,7 @@ def ApiUserFolderProgram(username, foldername, programname):
     name = program  # for PUT clause
 
     if flask.request.method == 'GET':
-        db_folder = db.Key("User", user, "Folder", folder).get()
+        db_folder = ndb.Key("User", user, "Folder", folder).get()
         try:
             # before March 2015, isPublic wasn't set
             pub = db_folder.isPublic is None or db_folder.isPublic or email == db_user.email
@@ -502,7 +502,7 @@ def ApiUserFolderProgram(username, foldername, programname):
             return {"user": user, "folder": folder, "name": name,
                     "error": str('The program "'+name+'" is in a private folder\nto which you do not have access.')}
         else:
-            db_program = db.Key("User", user, "Folder",
+            db_program = ndb.Key("User", user, "Folder",
                                 folder, "Program", name).get()
             if not db_program:
                 return {"user": user, "folder": folder, "name": name,
@@ -525,11 +525,11 @@ def ApiUserFolderProgram(username, foldername, programname):
         else:
             changes = {}
 
-        db_program = db.Key("User", user, "Folder",
+        db_program = ndb.Key("User", user, "Folder",
                             folder, "Program", program).get()
 
         if not db_program:  # if not db_program already, this is a request to create a new program
-            db_folder = db.Key("User", user, "Folder", folder).get()
+            db_folder = ndb.Key("User", user, "Folder", folder).get()
             if not db_folder:
                 return flask.make_response("No such folder", 403)
 
@@ -550,7 +550,7 @@ def ApiUserFolderProgram(username, foldername, programname):
         if not authorize_user(user):
             return flask.make_response("Unauthorized", 401)
 
-        db_program = db.Key("User", user, "Folder",
+        db_program = ndb.Key("User", user, "Folder",
                             folder, "Program", name).get()
         if db_program:
             db_program.key.delete()
@@ -575,7 +575,7 @@ def ApiUserFolderProgramDownload(username, foldername, programname, optionname):
     user, folder, name, option = names
 
     if option == 'downloadProgram':
-        db_folder = db.Key("User", user, "Folder", folder).get()
+        db_folder = ndb.Key("User", user, "Folder", folder).get()
         try:
             # before March 2015, isPublic wasn't set
             pub = db_folder.isPublic is None or db_folder.isPublic or db_user.email == email
@@ -583,7 +583,7 @@ def ApiUserFolderProgramDownload(username, foldername, programname, optionname):
             pub = True
         if not pub:
             return flask.make_response('Unauthorized', 405)
-        db_program = db.Key("User", user, "Folder",
+        db_program = ndb.Key("User", user, "Folder",
                             folder, "Program", name).get()
         if not db_program:
             return flask.make_response('Not found', 404)
@@ -608,7 +608,7 @@ def ApiUserFolderProgramDownload(username, foldername, programname, optionname):
 
     elif option == 'downloadFolder':
 
-        db_folder = db.Key("User", user, "Folder", folder).get()
+        db_folder = ndb.Key("User", user, "Folder", folder).get()
         try:
             # before March 2015, isPublic wasn't set
             pub = db_folder.isPublic is None or db_folder.isPublic or db_user.email == email
@@ -623,7 +623,7 @@ def ApiUserFolderProgramDownload(username, foldername, programname, optionname):
         programs = [
             {"name": p.key.id(),
              "source": p.source  # unicode(p.source or unicode())
-             } for p in Program.query(ancestor=db.Key("User", user, "Folder", folder))]
+             } for p in Program.query(ancestor=ndb.Key("User", user, "Folder", folder))]
         for p in programs:
             source = p['source']
             end = source.find('\n')
@@ -662,13 +662,13 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
 
     user, folder, program, option, oldfolder, oldprogram = names
 
-    db_folder = db.Key("User", user, "Folder", folder).get()
+    db_folder = ndb.Key("User", user, "Folder", folder).get()
     if not db_folder:
         return flask.make_response('Folder not found', 404)
 
     db_program = Program(parent=db_folder.key, id=program)
 
-    db_program_old = db.Key("User", user, "Folder",
+    db_program_old = ndb.Key("User", user, "Folder",
                             oldfolder, "Program", oldprogram).get()
     if not db_program_old:
         return flask.make_response('Old program not found', 404)

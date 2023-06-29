@@ -4,6 +4,7 @@ import os
 
 emulator = os.environ.get('DATASTORE_EMULATOR_HOST')
 
+
 def ndb_wsgi_middleware(wsgi_app):
     """
     This is helpful for Flask and NDB to play nice together.
@@ -39,12 +40,12 @@ def ndb_wsgi_middleware(wsgi_app):
 # Now let's deal with the app
 #
 
+
 def wrap_app(app):
-    app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)  # Wrap the app in middleware.
+    # Wrap the app in middleware.
+    app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
     return app
 
-def get_db():
-    return ndb
 
 class User (ndb.Model):
     """A single user of the IDE"""
@@ -55,11 +56,13 @@ class User (ndb.Model):
     gaeUser = ndb.UserProperty()
     secret = ndb.StringProperty()
 
+
 class Folder (ndb.Model):
     """A collection of programs created by a user"""
     # Parent is a User
     # key is the folder's name (unique for a user)
     isPublic = ndb.BooleanProperty()
+
 
 class Program (ndb.Model):
     """A single program"""
@@ -68,7 +71,8 @@ class Program (ndb.Model):
     description = ndb.StringProperty()
     source = ndb.TextProperty()
     screenshot = ndb.BlobProperty()
-    datetime = ndb.DateTimeProperty() # this is UTC date and time
+    datetime = ndb.DateTimeProperty()  # this is UTC date and time
+
 
 class Setting(ndb.Model):
     """A setting value"""
@@ -87,7 +91,7 @@ class Setting(ndb.Model):
         ndb_setting = Setting.cache.get(name)
 
         if not ndb_setting:
-            ndb_setting = ndb.Key("Setting",name).get()
+            ndb_setting = ndb.Key("Setting", name).get()
             if ndb_setting:
                 Setting.cache[name] = ndb_setting
             else:

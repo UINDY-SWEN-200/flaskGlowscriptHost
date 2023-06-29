@@ -1,8 +1,8 @@
 
-from bunnet import Document, Collection
 from datetime import datetime
 from bunnet import Document, Indexed, TimeSeriesConfig
 from pydantic import Field
+from typing import Optional
 
 
 class User(Document):
