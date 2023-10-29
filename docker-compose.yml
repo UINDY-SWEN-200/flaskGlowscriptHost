@@ -22,12 +22,13 @@ services:
      - datastore
     volumes:
      - .:/app
+     - /app/venv
      - datastore:/root/.config
     environment:
      - DATASTORE_EMULATOR_HOST=datastore:8081
      - FLASK_RUN_HOST=0.0.0.0
      - FLASK_RUN_PORT=8080
-    command: flask run
+    command: /app/venv/bin/flask run
 
 volumes:
   datastore:
