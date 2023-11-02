@@ -676,18 +676,8 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
     return {}
 
 
-@app.route('/user/<username>/folder/<foldername>/program/<programname>/')
-def loadFromURL(foldername, programname)
+@app.route('/loadURL/<url>')
+def loadURL(url):
     
-    try:
-    names, _, _ = parseUrlPath(
-        r'/folder/([^/]+)/program/([^/]+)', 3)
-    except ParseUrlPathException as pup:
-        errorMsg = pup.args[0]
-        code = pup.args[1]
-        return flask.make_response(errorMsg, code)
-    
-    folder, program = names
-    app.logger.info("folder=%s program=%s" % (folder, program))
-
-    if 
+    print(url)
+    return "GOT it"
