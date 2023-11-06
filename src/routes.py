@@ -121,6 +121,11 @@ def lib_static(filename):
     return flask.send_from_directory('../lib', filename, max_age=cache_timeout)
 
 
+@app.route('/node_modules/<path:filename>')
+def node_static(filename):
+    return flask.send_from_directory('../node_modules', filename)
+
+
 @app.route('/package/<path:filename>')
 def package_static(filename):
     return flask.send_from_directory('../package', filename)

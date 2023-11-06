@@ -1437,13 +1437,19 @@ $(function () {
 	                }
 	            }            	
             } else {
-	            var editor = ace.edit(page.find(".program-editor").get(0));
-	            window.editor = editor
-	            customACEMode(lang, progData.source)
-	            var mode = ace_require("ace/mode/visualjs").Mode
-		        editor.getSession().setMode(new mode())
-	            editor.setTheme({ cssClass: "ace-custom" })
-	            editor.getSession().setValue(progData.source)
+                    var editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                    value: [progData.source].join('\n'),
+                    language: 'python'
+                });
+                window.editor = editor
+        
+                // var editor = ace.edit(page.find(".program-editor").get(0));
+	            // window.editor = editor
+	            // customACEMode(lang, progData.source)
+	             //var mode = ace_require("ace/mode/visualjs").Mode
+		         //editor.getSession().setMode(new mode())
+	            // editor.setTheme({ cssClass: "ace-custom" })
+	            //editor.set(progData.source) 
                 editor.setReadOnly( !isWritable )
 	            editor.selection.moveCursorDown() // position cursor at start of line 2, below GlowScript header
                 editor.focus()
@@ -1463,14 +1469,14 @@ $(function () {
         })
     }
     
-    // NOTE: We use the "ace_require" function found in ace.js
+    // // NOTE: We use the "ace_require" function found in ace.js
 
-    /*********** Customization of the ACE editor *************/
-    // See https://github.com/ajaxorg/ace/wiki/Creating-or-Extending-an-Edit-Mode
-    // mode-javascript.js is loaded by ide/index.html.
-    // These modules in turn load worker-javascript.js in lib/ace.
-    // See lib/ace/FileSource.txt for where to find updated ACE files, and how they
-    // were modified in minor ways for GlowScript use.
+    // /*********** Customization of the ACE editor *************/
+    // // See https://github.com/ajaxorg/ace/wiki/Creating-or-Extending-an-Edit-Mode
+    // // mode-javascript.js is loaded by ide/index.html.
+    // // These modules in turn load worker-javascript.js in lib/ace.
+    // // See lib/ace/FileSource.txt for where to find updated ACE files, and how they
+    // // were modified in minor ways for GlowScript use.
     var customACEMode = function(lang, source) { // lang is "javascript" or some fragment
         
         var lib = "identifier.builtin"
