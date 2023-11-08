@@ -170,7 +170,8 @@ $(function () {
                 }
             }
             return u
-        } else {
+        } 
+        else {
             (route)
             throw new Error("Unknown API route")
         }
@@ -449,6 +450,12 @@ $(function () {
         if (h == "" || h == "/") return { page: "welcome" }
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
         if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
+        
+        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit/loadURL/([^/]+)$"))
+        if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3]}
+        
+        
+        
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
         if (m) return { page: "share", user: m[1], folder: m[2], program: m[3] }
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/option/([^/]+)"))

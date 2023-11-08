@@ -42,6 +42,7 @@ import cgi
 import zipfile
 from io import BytesIO
 import json
+import requests
 
 from .ndb_models import Folder, User, Program
 from google.cloud import ndb
@@ -147,6 +148,7 @@ def root():
     wasm_url = os.environ.get('PUBLIC_WASM_GUEST_URL')
     docs_home_url = os.environ.get('PUBLIC_DOCS_HOME')  # get docs home
     base_url = get_url_root()
+    #load_url = loadURL(url)
     return flask.render_template('index.html', sandbox_url=sandbox_url, docs_home_url=docs_home_url, base_url=base_url, wasm_url=wasm_url)
 
 #
@@ -674,10 +676,3 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
         db.delete_program(db_program_old)
 
     return {}
-
-
-@app.route('/loadURL/<url>')
-def loadURL(url):
-    
-    print(url)
-    return "GOT it"
