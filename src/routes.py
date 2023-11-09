@@ -106,6 +106,12 @@ def idejs_static():
     """
     Load ide.js from the src directory, and cache it in module_cache.
     """
+    if os.environ.get("FLASK_DEBUG", 0):
+        ide_js = load_idejs()
+    else:
+        ide_js = module_cache
+
+    
     ide_js = module_cache.get('ide.js')
 
     if not ide_js:
