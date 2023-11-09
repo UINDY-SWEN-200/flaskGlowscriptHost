@@ -1293,7 +1293,8 @@ $(function () {
 
             var haveScreenshot = true
 
-            var program = await fetch(loadURL)
+            var response = await fetch(route.loadURL)
+            var program = await response.text()
                 var header = parseVersionHeader( program )
                 if (header.ok) {
                     var untrusted_src = window.public_runner_guest_url
