@@ -451,7 +451,7 @@ $(function () {
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
         if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
         
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit/loadURL/([^/]+)$"))
+        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/([^/]+)$"))
         if (m) return { page: "load", user: m[1], folder: m[2], program: m[3], loadURL: m[4]}
         
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
@@ -716,7 +716,7 @@ $(function () {
             })
         }
 
-        pages.load = function(route) {
+        pages.load = async function(route) {
             try {
                 var username = route.user, folder = route.folder, program = route.program
                 var isWritable = route.user === loginStatus.username
