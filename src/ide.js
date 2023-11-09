@@ -1306,8 +1306,6 @@ $(function () {
                         untrusted_origin = guest_url.origin
                     }
                     untrusted_frame.prop("src", untrusted_src)  // Start loading the run script while we wait for the program...
-                    page.find(".prog-datetime").text(date_to_string(progData.datetime))
-                    haveScreenshot = progData.screenshot != ""
                     sendMessage(JSON.stringify({ program: header.source, version: header.version, lang: header.lang, unpackaged: header.unpackaged, autoscreenshot:isWritable && !haveScreenshot }))
                 } else {
                     if ($dialog) $dialog.dialog("close")
