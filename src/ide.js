@@ -451,7 +451,7 @@ $(function () {
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
         if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
         
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/([^/]+)$"))
+        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/(.+)$"))
         if (m) return { page: "load", user: m[1], folder: m[2], program: m[3], loadURL: m[4]}
         
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
