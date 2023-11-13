@@ -335,21 +335,19 @@ Loading...
 <script type="text/javascript" language="javascript" src="lib/jquery/IDE/jquery.min.js"></script>
 <script type="text/javascript" language="javascript" src="lib/jquery/IDE/jquery.textchange.custom.js"></script>
 <script type="text/javascript" language="javascript" src="lib/jquery/IDE/jquery-ui.custom.min.js"></script>
-<script type="text/javascript" language="javascript" src="lib/ace/ace.js"></script>
+<!-- <script type="text/javascript" language="javascript" src="lib/ace/ace.js"></script>
 <script type="text/javascript" language="javascript" src="lib/editor.js"></script>
 <script type="text/javascript" language="javascript" src="lib/ace/mode-javascript.js"></script>
-<script type="text/javascript" language="javascript" src="lib/ace/mode-python.js"></script>
+<script type="text/javascript" language="javascript" src="lib/ace/mode-python.js"></script> -->
 <script type="text/javascript" language="javascript" src="package/symbols.3.2.min.js"></script>
 <script type="text/javascript" language="javascript" src="ide.js"></script>
 
+<script>
+    var require = { paths: { vs: 'node_modules/monaco-editor/min/vs' } };
+</script>
 <script type="text/javascript" language="javascript" src="node_modules/monaco-editor/min/vs/loader.js"></script>
-    <script>
-        var require = { paths: { vs: 'node_modules/monaco-editor/min/vs' } };
-    </script>
-    <script type="text/javascript" language="javascript" src="node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
-    <script src="node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
-
-    
+<script type="text/javascript" language="javascript" src="node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+<script src="node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
 
 </body>
 </html>

@@ -1437,130 +1437,57 @@ $(function () {
 	                }
 	            }            	
             } else {
-                    var editor = monaco.editor.create(document.getElementById('editorContainer'), {
-                    value: [progData.source].join('\n'),
-                    language: 'python'
+                var editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                    language: 'python',
+                    value: loader()
                 });
-                window.editor = editor
-        
-                // var editor = ace.edit(page.find(".program-editor").get(0));
-	            // window.editor = editor
-	            // customACEMode(lang, progData.source)
-	             //var mode = ace_require("ace/mode/visualjs").Mode
-		         //editor.getSession().setMode(new mode())
-	            // editor.setTheme({ cssClass: "ace-custom" })
-	            //editor.set(progData.source) 
-                editor.setReadOnly( !isWritable )
-	            editor.selection.moveCursorDown() // position cursor at start of line 2, below GlowScript header
-                editor.focus()
-	            if (isWritable) {
-	                var save = saver( {user:username, folder:folder, program:program},
-		                function () { return editor.getSession().getValue() },
-	                    function (status) { page.find(".program-status").text(" ("+status+")") }
-	                )
-	                // Save immediately when navigating away from this page
-	                onNavigate.on(function (cb) { save(0, cb) })
-	                editor.getSession().on('change', function () {
-	                    save(1000)  // Save after 1 second of not typing
-	                })
-	            }
-            }
-            
-        })
-    }
-    
-    // // NOTE: We use the "ace_require" function found in ace.js
-
-    // /*********** Customization of the ACE editor *************/
-    // // See https://github.com/ajaxorg/ace/wiki/Creating-or-Extending-an-Edit-Mode
-    // // mode-javascript.js is loaded by ide/index.html.
-    // // These modules in turn load worker-javascript.js in lib/ace.
-    // // See lib/ace/FileSource.txt for where to find updated ACE files, and how they
-    // // were modified in minor ways for GlowScript use.
-    var customACEMode = function(lang, source) { // lang is "javascript" or some fragment
-        
-        var lib = "identifier.builtin"
-        var attr = "attribute.builtin"
-        var libraryWords = {
-            pos: attr, axis: attr, up: attr, /*color: attr, */ x: attr, y: attr, z: attr, size: attr,
-            visible: attr, forward: attr, length: attr, width: attr, radius: attr,
-            wait: "keyword.wait"
-        }
-
-        // Adding "var" and "function" to libraryWords for JavaScript should be unnecessary,
-        // but without them they aren't colorized red as they were in earlier ACE:
-        if (lang == 'javascript') {
-            libraryWords.var = "keyword"
-            libraryWords.function = "keyword"
-        }
-        
-        var globals = []
-        if (window.GlowscriptLibraryNames)
-            for (var i=0; i<window.GlowscriptLibraryNames.length; i++) {
-                var id = window.GlowscriptLibraryNames[i]
-                if (libraryWords[id] === undefined)
-                    libraryWords[id] = lib
-            }
-        for(var id in libraryWords) { // e.g. {sphere : identifier.builtin}
-            if (!libraryWords[id]) delete libraryWords[id];
-            if (libraryWords[id] == lib) globals.push(id)
-        }
-        
-        // The "//" at the end of lintPrefix comments out the line "GlowScript X.Y", hence ignored by the worker looking at JavaScript syntax
-        var lintPrefix = "/*jslint asi:true, undef:true*/ /*global wait " + globals.join(" ") + "*/\n//"
-
-        define('ace/mode/visualjs_highlight_rules', function (ace_require, exports, module) {
-            var oop = ace_require("ace/lib/oop")
-            var Rules
-            if (lang == 'vpython') Rules = ace_require("ace/mode/python_highlight_rules").PythonHighlightRules
-            else Rules = ace_require("ace/mode/javascript_highlight_rules").JavaScriptHighlightRules
-
-            var VisualHighlightRules = function () {
-                this.$rules = (new Rules()).getRules()
-                if (lang == 'vpython') this.$rules.start = [{ regex: /GlowScript\s+[\d\.]*[dev]*\s+[A-Za-z]*/, token: "keyword.version_header" } ].concat(this.$rules.start)
-                else this.$rules.start = [{ regex: /GlowScript\s+[\d\.]*[dev]*/, token: "keyword.version_header" } ].concat(this.$rules.start)
-                for(var id in libraryWords) {
-                    this.$rules.start = [{ regex: id, token: libraryWords[id] } ].concat(this.$rules.start)
+               
+                
+                editor.onDidChangeModelContent(() => {
+                    localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
+                });
+  
+                function loader(){
+                    var returnVal;
+                    if(apiGet != ['Python 3.2'].join('\n')){
+                        returnVal = apiGet({user:username, folder:folder, program:program}, function (progData) {});
+                        //returnVal = apiGet({'/api/user/<username>/folder/<foldername>/program/<programname>'}, function (progData) {});
+                        
+                        // returnVal = JSON.parse(localStorage.getItem('editorContainer')
+                    }
+                    else {
+                        returnVal = ['Python 3.2'].join('\n')
+                    }
+                    return returnVal
                 }
+                if (isWritable) {
+                    var save = saver( {user:username, folder:folder, program:program},
+                        function () { return editor.getValue() },
+                        function (status) { page.find(".program-status").text(" ("+status+")") }
+                    )
+                    // Save immediately when navigating away from this page
+                    onNavigate.on(function (cb) { save(0, cb) })
+                    editor.onDidChangeModelContent('change', function () {
+                        save(1000)  // Save after 1 second of not typing
+                    })
+                }
+            //localStorage.clear()
+                // editor.onDidChangeModelContent(() => {
+                //     localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
+                //     editor.save(editor.getValue())
+                // });
             }
-            oop.inherits(VisualHighlightRules, Rules)
-            exports.VisualHighlightRules = VisualHighlightRules
-        })
-        
-        
-        //------------------------------------------------------------------------------------------------------
-        define('ace/mode/visualjs', function (ace_require, exports, module) {
-            var oop = ace_require("ace/lib/oop")
-            if (lang == 'vpython') var BaseMode = ace_require("ace/mode/python").Mode
-            else var BaseMode = ace_require("ace/mode/javascript").Mode
-            var Tokenizer = ace_require("ace/tokenizer").Tokenizer
-            var VisualHighlightRules = ace_require("ace/mode/visualjs_highlight_rules").VisualHighlightRules
-            var WorkerClient = ace_require("ace/worker/worker_client").WorkerClient // *****************************************************
-
-            var Mode = function () {
-                BaseMode.call(this)
-                this.$tokenizer = new Tokenizer((new VisualHighlightRules()).getRules());
-            }
-            oop.inherits(Mode, BaseMode); // nead a semicolon here due to following left parens
-            
-            // There was formerly "worker" machinery here which showed a warning icon at the left of an line with an error, but
-            //     (1) This tends to confuse students.
-            //     (2) GlowScript catches lots of errors already with respect to parens, brackets, braces, and quotes.
-            //     (3) Highlighting is handled separately, so is not affected by eliminating workers.
-            //     (4) Caused some awkwardness in changing the language on the first line.
-            //     (5) And the killer issue: workers chew up LOTS of CPU time for little gain.
-            
-            exports.Mode = Mode
-        })
-    }
-
+                
+        }
+    )}
+    
     function iframefix() {
         // When a mouse operation is started outside an iframe, cover all iframes on the page so
         // that mousemove events don't get eaten by them.  Supposedly jquery UI 1.9 will have this
         // feature, so maybe this can be removed in the future.
-
+    
         $(document).mousedown(function(ev) {
-            $("iframe").not(".iframefix").not(".template iframe").each( function() {
+                    $("iframe").not(".iframefix").not(".template iframe").each( function() {
                 ("iframefix", this, this.offsetWidth, this.offsetHeight, this.width)
                 $('<div class="iframefix" style="background: #fff;"></div>')
                     .css({
