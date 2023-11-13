@@ -26,5 +26,5 @@ Accomplished - Made pages.load in ide.js which can load code from a URL by using
 Status - The program can currently take a URL and run code from the URL.
 
 
-Next Step - Take code from Google Drive and run it. Reccommend making a new route in router() for loading code from Google Drive. Make code that you load from Google Drive or using loadURL go into either the database or Google Drive.
+Next Step - Take code from Google Drive and run it. Start by making a new route in router() for loading code from Google Drive. Make code that you load from Google Drive or using loadURL go into either the database or Google Drive.
 
