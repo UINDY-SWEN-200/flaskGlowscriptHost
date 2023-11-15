@@ -1419,7 +1419,7 @@ $(function () {
         	page.find(".prog-datetime").text(date_to_string(progData.datetime))
         	// program is the name of the file; progData.source is the program source in that file
         	var lang = parseVersionHeader(progData.source).lang
-            if (!(lang == 'javascript' || lang == 'vpython')) lang = 'javascript'
+            if (!(lang == 'javascript' || lang == 'vpython')) lang = 'python'
             
             if (navigator.userAgent.match(/Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile/i)) {
 	        	var editor = GSedit
@@ -1438,8 +1438,8 @@ $(function () {
 	            }            	
             } else {
                 var editor = monaco.editor.create(document.getElementById('editorContainer'), {
-                    language: 'python',
-                    value: loader()
+                    language: lang,
+                    value: progData.source
                 });
                
                 
