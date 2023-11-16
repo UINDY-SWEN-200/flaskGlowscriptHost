@@ -1419,7 +1419,7 @@ $(function () {
         	page.find(".prog-datetime").text(date_to_string(progData.datetime))
         	// program is the name of the file; progData.source is the program source in that file
         	var lang = parseVersionHeader(progData.source).lang
-            if (!(lang == 'javascript' || lang == 'vpython')) lang = 'python'
+            if (!(lang == 'javascript' || lang == 'vpython')) lang = 'javascript'
             
             if (navigator.userAgent.match(/Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile/i)) {
 	        	var editor = GSedit
@@ -1438,28 +1438,14 @@ $(function () {
 	            }            	
             } else {
                 var editor = monaco.editor.create(document.getElementById('editorContainer'), {
-                    language: lang,
+                    language: 'python',
                     value: progData.source
                 });
                
-                
                 editor.onDidChangeModelContent(() => {
                     localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
                 });
   
-                function loader(){
-                    var returnVal;
-                    if(apiGet != ['Python 3.2'].join('\n')){
-                        returnVal = apiGet({user:username, folder:folder, program:program}, function (progData) {});
-                        //returnVal = apiGet({'/api/user/<username>/folder/<foldername>/program/<programname>'}, function (progData) {});
-                        
-                        // returnVal = JSON.parse(localStorage.getItem('editorContainer')
-                    }
-                    else {
-                        returnVal = ['Python 3.2'].join('\n')
-                    }
-                    return returnVal
-                }
                 if (isWritable) {
                     var save = saver( {user:username, folder:folder, program:program},
                         function () { return editor.getValue() },
@@ -1471,11 +1457,6 @@ $(function () {
                         save(1000)  // Save after 1 second of not typing
                     })
                 }
-            //localStorage.clear()
-                // editor.onDidChangeModelContent(() => {
-                //     localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
-                //     editor.save(editor.getValue())
-                // });
             }
                 
         }
