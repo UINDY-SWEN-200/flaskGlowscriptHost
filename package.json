@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@googleapis/docs": "^3.0.0",
     "monaco-editor": "^0.44.0"
   }
 }

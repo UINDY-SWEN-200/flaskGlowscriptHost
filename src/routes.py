@@ -326,7 +326,6 @@ def ApiUsers():
     N = User.query().count()
     return "Nusers = " + str(N)
 
-
 @app.route('/api/user/<username>', methods=['GET', 'PUT'])
 def ApiUser(username):
     """

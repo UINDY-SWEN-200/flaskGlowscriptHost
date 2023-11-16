@@ -450,10 +450,8 @@ $(function () {
         if (h == "" || h == "/") return { page: "welcome" }
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
         if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
-        
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/(.+)$"))
         if (m) return { page: "load", user: m[1], folder: m[2], program: m[3], loadURL: m[4]}
-        
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
         if (m) return { page: "share", user: m[1], folder: m[2], program: m[3] }
         m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/option/([^/]+)"))
@@ -464,11 +462,15 @@ $(function () {
         if (m) return { page: "folder", user: m[1], folder: m[2] }
         m = h.match(new RegExp("/user/([^/]+)/$"))
         if (m) return { page: "user", user: m[1] }
+        m = h.match(new RegExp("/gdID/(.+)$"))
+        if (m) return { page: "runGDfile", program:m[1]}
+        m = h.match(new RegExp("/gdID/(.+)/edit$"))
+        if (m) return { page: "editGDfile", program:m[1]}
         m = h.match(new RegExp("/action/([^/]+)$"))
         if (m) return { page: "action", action: m[1] }
         return { page: "error", error: "404 Not Found.  The URL appears to be incorrect." }
     }
-    function unroute(route, ext) {
+function unroute(route, ext) {
         // Reverses what router() does, returning a URI (starting with #)
         if (ext) route = $.extend({}, route, ext)
         var h = "#/"
@@ -590,6 +592,35 @@ $(function () {
     pages.action = function(route) {
         redirect( {page: "welcome"} )
     }
+
+    pages.editGDfile = function(gdID) {
+        
+    }
+
+    pages.runGDfile = function(gdID) {
+        const docs = require('@googleapis/docs')
+
+        const auth = new docs.auth.GoogleAuth({
+          keyFilename: 'PATH_TO_SERVICE_ACCOUNT_KEY.json',
+            // Scopes can be specified either as an array or as a single, space-delimited string.
+          scopes: ['https://www.googleapis.com/auth/documents']
+        });
+        const authClient = auth.getClient();
+        
+        const client = docs.docs({
+            version: 'v1',
+            auth: authClient
+        });
+        
+        const createResponse = client.documents.create({
+            requestBody: {
+              title: 'Your new document!',
+            },
+        });
+        // 1HugpmF8AN9iqgwqPtE9W5i1Y1oV1ycIjtiD1SlYKwC4
+        console.log(createResponse.data);
+    }
+
     pages.downloadFolder = function(route) { // Currently the only program option is download (download a program to user computer) // Currently the only program option is download (download a program to user computer)
         apiDownload( {user:route.user, folder:route.folder, program:'program', option:'downloadFolder'}, function(ret) {
     		window.location = apiURL(route) // this sends the file to the user's download folder
