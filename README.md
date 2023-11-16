@@ -16,6 +16,7 @@ You can run this host app, and the two guest apps in code spaces.
 * Note the URL of each of these apps
 * In the .flaskenv file, set PUBLIC_RUNNER_GUEST_URL and PUBLIC_WASM_GUEST_URL
 
+## Editor Changes/Status
 
 What We Accomplished:
 1) deactivated ace editor in file ide.js line 1440
@@ -30,3 +31,18 @@ What Needs to be Accomplished:
 2) Having code load in when opened -- This was Finished
 3) Getting the right language to load into the editor.
 4) test that the relationship with runner is good
+
+## LoadURL Changes/Status
+
+Sprint One - LoadURL Branch
+
+Accomplished - Made pages.load in ide.js which can load code from a URL by using the following route "/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/(.+)$". This route can also be found in the router().
+
+
+Status - The program can currently take a URL and run code from the URL.
+
+
+Next Step - Take code from Google Drive and run it. Start by making a new route in router() for loading code from Google Drive. Make code that you load from Google Drive or using loadURL go into either the database or Google Drive.
+
+Next Next Step - Be able to save, edit, and run code that you load from Google Drive and loadURL
+
