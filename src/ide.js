@@ -1635,10 +1635,6 @@ $(function () {
                     language: 'python',
                     value: progData.source
                 });
-               
-                editor.onDidChangeModelContent(() => {
-                    localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
-                });
   
                 if (isWritable) {
                     var save = saver( {user:username, folder:folder, program:program},
@@ -1652,7 +1648,6 @@ $(function () {
                     })
                 }
             }
-                
         }
     )}
     
