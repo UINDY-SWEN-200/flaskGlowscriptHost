@@ -120,6 +120,16 @@ def idejs_static():
     return flask.Response(ide_js, mimetype='text/javascript')
 
 
+# @app.route('/require.js')
+# @no_cache
+# def requirejs_static():
+
+#     cache_timeout = None
+#     if is_running_locally():
+#         cache_timeout = 0
+#     return flask.send_from_directory('.', "require.js", max_age=cache_timeout)
+
+
 @app.route('/lib/<path:filename>')
 def lib_static(filename):
     cache_timeout = None
@@ -687,3 +697,13 @@ def ApiUserProgramCopy(username, foldername, programname, optionname, oldfoldern
         db.delete_program(db_program_old)
 
     return {}
+
+# @app.route('/ideShortcuts.js')
+# @no_cache
+# def ideShortCutsjs_static():
+#     cache_timeout = None
+#     if is_running_locally():
+#         cache_timeout = 0
+#     return flask.send_from_directory('.', "ideShortcuts.js", max_age=cache_timeout)
+   
+    
