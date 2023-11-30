@@ -462,10 +462,10 @@ $(function () {
         if (m) return { page: "folder", user: m[1], folder: m[2] }
         m = h.match(new RegExp("/user/([^/]+)/$"))
         if (m) return { page: "user", user: m[1] }
-        m = h.match(new RegExp("/gdID/(.+)$"))
-        if (m) return { page: "runGDfile", program:m[1]}
+        m = h.match(new RegExp("/gdID/(.+)/loadURL/(.+)$"))
+        if (m) return { page: "runGDfile", loadURL: m[1]}
         m = h.match(new RegExp("/gdID/(.+)/edit$"))
-        if (m) return { page: "editGDfile", program:m[1]}
+        if (m) return { page: "edit", program:m[1]}
         m = h.match(new RegExp("/action/([^/]+)$"))
         if (m) return { page: "action", action: m[1] }
         return { page: "error", error: "404 Not Found.  The URL appears to be incorrect." }
