@@ -1,0 +1,12 @@
+{
+    "timeZone": "America/Denver",
+    "dependencies": {
+    },
+    "exceptionLogging": "STACKDRIVER",
+    "runtimeVersion": "V8",
+    "addOns":{
+      "drive":{"onItemsSelectedTrigger": {
+          "runFunction": "onDriveItemsSelected"
+        }}, 
+      "common":{"name":"Open WebVPython", "logoUrl":"https://storage.googleapis.com/uindysjs/cover64.png"}}
+  }
