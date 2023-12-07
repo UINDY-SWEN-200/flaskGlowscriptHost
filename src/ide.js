@@ -462,10 +462,10 @@ $(function () {
         if (m) return { page: "folder", user: m[1], folder: m[2] }
         m = h.match(new RegExp("/user/([^/]+)/$"))
         if (m) return { page: "user", user: m[1] }
-        m = h.match(new RegExp("/gdID/(.+)/loadURL/(.+)$"))
-        if (m) return { page: "runGDfile", loadURL: m[1]}
+        // m = h.match(new RegExp("/gdID/(.+)$"))
+        // if (m) return { page: "runGDfile", gdID: m[1]}
         m = h.match(new RegExp("/gdID/(.+)/edit$"))
-        if (m) return { page: "edit", program:m[1]}
+        if (m) return { page: "editGDfile", gdID: m[1]}
         m = h.match(new RegExp("/action/([^/]+)$"))
         if (m) return { page: "action", action: m[1] }
         return { page: "error", error: "404 Not Found.  The URL appears to be incorrect." }
@@ -593,33 +593,86 @@ function unroute(route, ext) {
         redirect( {page: "welcome"} )
     }
 
-    pages.editGDfile = function(gdID) {
+    pages.editGDfile = async function(route) {
+        // // const ID = route.gdID
+        // const mockData = 'It works!'
+        // pages.route = 'edit'
+        // pages.edit(mockData)
+        // // gdID/1HugpmF8AN9iqgwqPtE9W5i1Y1oV1ycIjtiD1SlYKwC4/edit$
+       
+            var response = await fetch("https://storage.googleapis.com/uindysjs/SHO_Example.py")
+            var program = await response.text()
         
-    }
+        var isWritable = route.user === loginStatus.username
+        if (disable_writes) isWritable = false
 
-    pages.runGDfile = function(gdID) {
-        const docs = require('@googleapis/docs')
+        var page = $(".editPage.template").clone().removeClass("template")
+        // page.find("a.username").prop("href", unroute({page:"user", user:username}))
+        // page.find(".username").text(username)
+        //page.find(".foldername").text(folder) // not displayed; not referenced in index.html
+        //page.find(".programname").text(program) // + ", IDE jQuery ver. " + jQuery.fn.jquery) // To show IDE jQuery version number at top of IDE during edit.
+        // var run_link = unroute({page:"run", user:username, folder:folder, program:program})
+        // page.find(".prog-run.button").prop("href", run_link).prop("title", "Press Ctrl-1 to run\nPress Ctrl-2 to run in another window")
+        // page.find(".prog-share.button").prop("href", unroute({page:"share", user:username, folder:folder, program:program}))
+        // page.find(".prog-download.button").prop("href", unroute({page:"downloadProgram", user:username, folder:folder, program:program}))
+        if (!isWritable) page.find(".readonly").removeClass("template")
 
-        const auth = new docs.auth.GoogleAuth({
-          keyFilename: 'PATH_TO_SERVICE_ACCOUNT_KEY.json',
-            // Scopes can be specified either as an array or as a single, space-delimited string.
-          scopes: ['https://www.googleapis.com/auth/documents']
-        });
-        const authClient = auth.getClient();
+        pageBody.html(page)
         
-        const client = docs.docs({
-            version: 'v1',
-            auth: authClient
-        });
+        $(document).keydown( shortcutKey )
+        onNavigate.on( function(cb) { $(document).off("keydown", shortcutKey); cb() } )
+        function shortcutKey(ev) {
+
+            if (ev.ctrlKey && ev.keyCode == "1".charCodeAt(0)) {
+                ev.preventDefault()
+                navigate(run_link)
+            }
+            if (ev.ctrlKey && ev.keyCode == "2".charCodeAt(0)) {
+                ev.preventDefault()
+                var features = "titlebar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes,toolbar=yes"
+                window.open("/#/", "GlowScriptRun", features)
+                window.open(run_link, "GlowScriptRun", features)
+            }
+        }
+
         
-        const createResponse = client.documents.create({
-            requestBody: {
-              title: 'Your new document!',
-            },
-        });
-        // 1HugpmF8AN9iqgwqPtE9W5i1Y1oV1ycIjtiD1SlYKwC4
-        console.log(createResponse.data);
-    }
+        	// page.find(".prog-datetime").text(date_to_string(program.datetime))
+        	var lang = 'vpython'
+            if (!(lang == 'javascript' || lang == 'vpython')) lang = 'javascript'
+            
+            if (navigator.userAgent.match(/Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile/i)) {
+	        	var editor = GSedit
+	            window.editor = editor
+	            editor.init(page.find(".program-editor"), program, !isWritable)
+	         	
+            } else {
+                var editor = monaco.editor.create(document.getElementById('editorContainer'), {
+                    language: 'python',
+                    value: program
+                });
+                //editor.setItem('editorContainer', JSON.stringify(program));
+                // editor.onDidChangeModelContent(() => {
+                //     localStorage.setItem('editorContainer', JSON.stringify(editor.getValue()));
+                // });
+  
+                // if (isWritable) {
+                //     var save = saver( {user:username, folder:folder, program:program},
+                //         function () { return editor.getValue() },
+                //         function (status) { page.find(".program-status").text(" ("+status+")") }
+                //     )
+                //     // Save immediately when navigating away from this page
+                //     onNavigate.on(function (cb) { save(0, cb) })
+                //     editor.onDidChangeModelContent('change', function () {
+                //         save(1000)  // Save after 1 second of not typing
+                //     })
+                // }
+            }
+                
+        }
+    
+    // pages.runGDfile = function(route) {
+        
+    //}
 
     pages.downloadFolder = function(route) { // Currently the only program option is download (download a program to user computer) // Currently the only program option is download (download a program to user computer)
         apiDownload( {user:route.user, folder:route.folder, program:'program', option:'downloadFolder'}, function(ret) {
