@@ -1633,9 +1633,16 @@ $(function () {
             } else {
                 var editor = monaco.editor.create(document.getElementById('editorContainer'), {
                     language: 'python',
-                    value: progData.source
+                    value: progData.source,
                 });
-  
+                editor.layout({width: window.innerWidth, height: window.innerHeight})
+
+                window.onresize = () => {
+                    var w = window.innerWidth;
+                    var h = window.innerHeight;
+                    editor.layout({width: w, height: h});
+                };
+            
                 if (isWritable) {
                     var save = saver( {user:username, folder:folder, program:program},
                         function () { return editor.getValue() },
@@ -1650,6 +1657,7 @@ $(function () {
             }
         }
     )}
+    
     
     function iframefix() {
         // When a mouse operation is started outside an iframe, cover all iframes on the page so
@@ -1675,6 +1683,5 @@ $(function () {
         })
     }
     iframefix()
-
     window.onhashchange()
 })
