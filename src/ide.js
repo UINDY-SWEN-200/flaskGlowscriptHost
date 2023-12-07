@@ -195,7 +195,7 @@ $(function () {
             url: url,
             data: { 'program': JSON.stringify(data) },
             headers: { 'X-CSRF-Token': loginStatus.secret },
-            dataType: 'text',  // actually nothing?
+            dataType: 'text',  
             success: callback,
             error: function (xhr, message, exc) {
                 apiError("API " + message + " saving " + url + ": " + exc)
@@ -215,9 +215,7 @@ $(function () {
             }
         })
     }
-    function apiCopy(route, callback) { // copy or rename
-    	// route = /api/user/username/folder/foldername/program/programname/option/copy or rename/
-    	//    oldfolder/oldfoldername/oldprogram/oldprogramname
+    function apiCopy(route, callback) { 
     	var url = apiURL(route)
         $.ajax({
             type: 'PUT',
@@ -229,8 +227,6 @@ $(function () {
         })
     }
     function apiDownload(route, callback) { 
-    	// route = /api/user/username/folder/foldername/program/programname/option/download
-    	// Slight modifications here and in api.py could handle options other than download
     	var url = apiURL(route)
         $.ajax({
             type: 'GET',
@@ -279,17 +275,12 @@ $(function () {
                 //description: ""  // not currently used
             }
 
-            // description is not currently used
-            //var descriptionCommentMatch = savingSource.match(/^(?:GlowScript.*\r?\n|#.*\r?\n|\r?\n)*\/\*([^\x00]*?)\*\//)
-            //if (descriptionCommentMatch) save.description = descriptionCommentMatch[1]
-
             setStatus("Saving...")
             apiPut(uri, save, saved)
         }
 
         function saved() {
             saving = false
-            // If there's been another change, do another delayed save
             if (getProgramSource() !== savingSource)
                 saveAfter(saveDelay)
             else {
@@ -314,9 +305,6 @@ $(function () {
         return saveAfter
     }
     var loginStatus = window.loginStatus = { 'state': 'checking' }
-    // For now, we need to get login status before doing anything else.  Ideally we would
-    // do this in parallel with loading other page information, but not display pages that
-    // care about login status until this is ready.
     onNavigate.on( getLoginStatus )
     function getLoginStatus( cb ) {
         apiGet({login:1}, function(stat) {
@@ -325,12 +313,6 @@ $(function () {
         })
     }
     function onLoginStatusChange(stat) {
-        // Startup sequence: Call onhashchange, which executes onNavigate.trigger, 
-        // which calls getLoginStatus due to onNavigate.on( getLoginStatus ),
-        // which calls onLoginStatusChange with one of these two arguments:
-        // stat = {state: "not_logged_in", login_url: "/_ah/login?continue=http%3A//localhost%3A8080/%23/action/loggedin"}
-        // stat = {username: "test", state: "logged_in", secret: "qwie9Mnddk0zYnz3Qxov7g==", 
-        //              logout_url: "/_ah/login?continue=http%3A//localhost%3A8080/%23/action/loggedout&action=Logout"}
         if (stat === null) {  // Apparently timing issues can lead to stat === null at startup
             stat = {'state': 'checking'}
             window.onhashchange() // try again
@@ -344,13 +326,8 @@ $(function () {
         var $activestatus = $userstatus.filter("." + loginStatus.state)
         $activestatus.removeClass("template")
 
-        // For now, we use the login and logout urls directly (we don't frame them or anything).  After signing in/out, they
-        // redirect back to /#/action/something, and the actionPage handler below will pop state back to this page (which will
-        // be reloaded)
-        
         if (loginStatus.state == "not_logged_in") {
             $activestatus.find(".signin").prop("href", loginStatus.login_url)
-            //click(function (ev) { tryLogin(); ev.preventDefault(); return false; })
         }
         else if (loginStatus.state == "logged_in") {
             $activestatus.find(".signout").prop("href", loginStatus.logout_url)
@@ -361,7 +338,6 @@ $(function () {
             var $dialog = $("#newUser-dialog").clone().removeClass("template")
             var $name = $dialog.find('input[name="name"]')
 
-            // Real-time validation for the name field
             var changeTimeout
             $name.on('textchange', function (event, previousText) {
                 $dialog.siblings('.ui-dialog-buttonpane').find("button:eq(0)").button("disable")
@@ -375,8 +351,6 @@ $(function () {
                 var val = $name.val()
                 if (val == "")
                     err("You must specify a name.")
-                // Instead of listing what characters are not legal, list those that are.
-                // else if (!val.match(new RegExp("^[^/@<>&%]+$"))) // old scheme
                 else if (val.match(new RegExp("[^a-z^A-Z^0-9^\x20^\x2d^\x2e^\x5f]")))
                     err( "Name must contain only letters, digits, spaces, hyphens, periods, or underscores." )
                 else
@@ -414,7 +388,6 @@ $(function () {
                             }
                         })
                     },
-                    //"Cancel": function () { $(this).dialog("close"); }
                 },
                 close: function () { }
             }).submit(function(ev){
@@ -426,16 +399,7 @@ $(function () {
         }
     }
 
-    /********** Router *********/
-
     function router() {
-        // This takes the "virtual url" from the hash portion of window.location and turns it into a "route" structure, e.g.
-        //   { page:"edit", user:"Me", folder:"My Programs", program:"Some Program" }
-
-        // For readability, our virtual urls are escaped in a nonstandard way.  Spaces are represented by _, and slashes
-        //   are not representable (even escaped).  % and _ are escaped using percent encoding.  Non-ascii characters are NOT escaped.
-    	// Later (2014?): There were problems with this scheme, and now spaces etc. are not allowed in names of entities.
-    	
     	var h = (location.hash || "#").substr(1)
 
         var components = h.split("/")
@@ -447,29 +411,31 @@ $(function () {
         h = components.join("/")
 
         var m
-        if (h == "" || h == "/") return { page: "welcome" }
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
-        if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
-        
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/(.+)$"))
-        if (m) return { page: "load", user: m[1], folder: m[2], program: m[3], loadURL: m[4]}
-        
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
-        if (m) return { page: "share", user: m[1], folder: m[2], program: m[3] }
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/option/([^/]+)"))
-        if (m) return { page: m[4], user: m[1], folder: m[2], program: m[3], option:m[4] }
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)$"))
-        if (m) return { page: "run", user: m[1], folder: m[2], program: m[3] }
-        m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/$"))
-        if (m) return { page: "folder", user: m[1], folder: m[2] }
-        m = h.match(new RegExp("/user/([^/]+)/$"))
-        if (m) return { page: "user", user: m[1] }
-        m = h.match(new RegExp("/action/([^/]+)$"))
-        if (m) return { page: "action", action: m[1] }
-        return { page: "error", error: "404 Not Found.  The URL appears to be incorrect." }
+       if (h == "" || h == "/") return { page: "welcome" }
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/edit$"))
+       if (m) return { page: "edit", user: m[1], folder: m[2], program: m[3] }
+
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/nolinks$"))
+       if (m) return { page: "run", user: m[1], folder: m[2], program: m[3], nolink: true}
+      
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/loadURL/(.+)$"))
+       if (m) return { page: "load", user: m[1], folder: m[2], program: m[3], loadURL: m[4]}
+      
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/share$"))
+       if (m) return { page: "share", user: m[1], folder: m[2], program: m[3] }
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)/option/([^/]+)"))
+       if (m) return { page: m[4], user: m[1], folder: m[2], program: m[3], option:m[4] }
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/program/([^/]+)$"))
+       if (m) return { page: "run", user: m[1], folder: m[2], program: m[3], nolink: false}
+       m = h.match(new RegExp("/user/([^/]+)/folder/([^/]+)/$"))
+       if (m) return { page: "folder", user: m[1], folder: m[2] }
+       m = h.match(new RegExp("/user/([^/]+)/$"))
+       if (m) return { page: "user", user: m[1] }
+       m = h.match(new RegExp("/action/([^/]+)$"))
+       if (m) return { page: "action", action: m[1] }
+       return { page: "error", error: "404 Not Found.  The URL appears to be incorrect." }
     }
     function unroute(route, ext) {
-        // Reverses what router() does, returning a URI (starting with #)
         if (ext) route = $.extend({}, route, ext)
         var h = "#/"
         if (route.page == "welcome") return h
@@ -580,7 +546,6 @@ $(function () {
         pageBody.html($page)
     }
     pages.user = function(route) {
-        // Redirect to a default folder.  For now, this is the first folder in the list of folders for the user
         apiGet( {user:route.user, folder:LIST}, function (data) {
             route.folder = decode(data.folders[0])
             route.page = "folder"
@@ -644,7 +609,6 @@ $(function () {
         }
 
         function createDialog( templ, doCreate ) {
-            // dialog for creating a new program (temp1 == '#prog-new-dialog') or a new folder (temp1 == '#folder-new-dialog')
             var $dialog = $(templ).clone().removeClass("template")
             $dialog.dialog({
                 width: 300,
@@ -710,7 +674,6 @@ $(function () {
         }
         
         function renameDialog( dialog, oldname, doRename ) {
-        	// dialog for renaming/copying a program (can include moving to another folder)
         	var args =	{
         		width: 300,
                 resizable: false,
@@ -861,7 +824,6 @@ $(function () {
             navigate({page: "folder", user:username, folder:folder})
         })
 
-        // Get a list of folders.  May return multiple times if list is updated
         var set_of_folders = {} // {folder_name : isPublic, ..... }
         getFolderList(username, function (data) {
             page.find(".folderList > .templated").remove()
@@ -884,7 +846,6 @@ $(function () {
             page.find(".folder-listing").text(s)
         })
         	
-        // Get a list of programs from the server
         apiGet( {user:username, folder:folder, program:LIST}, function (data) {
         	if ("error" in data)
         		alert(data.error)
@@ -1063,19 +1024,29 @@ $(function () {
 
     pages.run = function(route) {
         try {
-            var username = route.user, folder = route.folder, program = route.program
-            var isWritable = route.user === loginStatus.username
-            if (disable_writes) isWritable = false
+           var username = route.user, folder = route.folder, program = route.program
+           var isWritable = route.user === loginStatus.username
+           var nolink = route.nolink
+           if (disable_writes) isWritable = false
 
-            var page = $(".runPage.template").clone().removeClass("template")
-            page.find("a.username").prop("href", unroute(route, {page:"user"}))
-            page.find(".username").text(username)
-            page.find(".foldername").text(folder)
-            page.find(".programname").text(program) // + ", IDE jQuery ver. " + jQuery.fn.jquery) // To show IDE jQuery version number at top of IDE during run.
-            page.find(".prog-edit.button").prop("href", unroute(route, {page:"edit"}))
-            if (isWritable) page.find(".prog-edit.button").text('Edit this program')
-            else page.find(".prog-edit.button").text('View this program')
-            pageBody.html(page)
+
+           var page = $(".runPage.template").clone().removeClass("template")
+           page.find("a.username").prop("href", unroute(route, {page:"user"}))
+           page.find(".username").text(username)
+           page.find(".foldername").text(folder)
+           page.find(".programname").text(program) // + ", IDE jQuery ver. " + jQuery.fn.jquery) // To show IDE jQuery version number at top of IDE during run.
+
+           if(nolink) {
+            page.find(".prog-edit.button").text('')
+           }
+           else {
+           page.find(".prog-edit.button").prop("href", unroute(route, {page:"edit"}))
+           if (isWritable) page.find(".prog-edit.button").text('Edit this program')
+           else page.find(".prog-edit.button").text('View this program')
+           
+           }
+           
+           pageBody.html(page)
 
             // Validate that the browser supports Object.defineProperty (not ie8)
             Object.defineProperty({}, "foo", {get: function() { return "bar" }})
@@ -1131,8 +1102,82 @@ $(function () {
             alert("There was an error trying to run the program.")
         }
 
-        pagesShortcut($dialog)
+        function checkDialog(cb) {
+            if ($dialog) {
+                if (navigatingTo.program !== program || navigatingTo.page == "run") {
+                    $dialog.dialog("close")
+                } else {
+                    // Keep the dialog on this page, but check again at the next transition
+                    onNavigate.on( checkDialog )
+                }
+            }
+            cb()
+        }
+
+        function screenshot(ev) {
+            sendMessage(JSON.stringify({ screenshot: true }))
+            ev.preventDefault()
+        }
+
+        function sendEvent(ev) {
+            if (ev.type == "keydown" || ev.type == "keyup") ev = { type:ev.type, which:ev.which }
+            else return;
+            if (ready)
+                sendMessage( JSON.stringify({event: ev}) )
+        }
+        // Wrapper for postMessage that queues messages while the iframe initializes
+        function sendMessage(message) {
+            if (unsentMessages === null)
+                untrusted_frame.get(0).contentWindow.postMessage(message, untrusted_origin)
+            else
+                unsentMessages.push(message)
+        }
         
+        function receiveMessage(event) {
+            event = event.originalEvent // originalEvent is a jquery entity
+            if (event.origin !== untrusted_origin) return // check the origin
+            var message = JSON.parse(event.data)
+                
+            var toType = function(obj) {
+                return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+            }
+
+            if (!ready) { // first-time message from run.js; check that first-time message content is {ready:true}
+                if (toType(message) != 'object') return
+                if (message.ready === undefined) return
+                if (message.ready !== true) return
+                delete message.ready
+                for (var m in message) return // message should now be empty; if not, return
+                ready = true
+                if (unsentMessages !== null) {
+                    var um = unsentMessages; unsentMessages = null
+                    for (var i = 0; i < um.length; i++)
+                        sendMessage(um[i])
+                }
+                if (isWritable) page.find(".prog-screenshot.button").removeClass("template").click( screenshot )
+            }
+            if (message.screenshot && isWritable && (!message.autoscreenshot || !haveScreenshot)) {
+                haveScreenshot = true
+                apiPut( {user:username, folder:folder, program:program}, { screenshot: message.screenshot }, function(){} )
+            }
+            if (message.error) {
+                var syntaxpattern = /(SyntaxError[^\d]*)([\d]*)/
+                var findsyntax = message.error.match(syntaxpattern)
+                if (findsyntax === null && parseVersionHeader(null).lang == 'javascript') {
+                	var u = message.error.split('\n')
+                	var m = u[0].match(/:(\d*):\d*:.*:(.*)/)
+                	if (m !== null) {
+	                	message.error = 'Error in line '+(m[1]-5)+':'+m[2]
+	                	message.traceback = u[1]+'\n'+u[2]
+                	}                    
+                }
+                if ($dialog) $dialog.dialog("close")
+                $dialog = $("#program-error-dialog").clone().removeClass("template")
+                $dialog.find(".error-details").text(message.error)
+                $dialog.find(".error-traceback").text(message.traceback)
+                $dialog.dialog({ width: "600px", autoOpen: true })
+            }
+        }
     }
 
     pages.load = async function(route) {
@@ -1151,7 +1196,6 @@ $(function () {
             else page.find(".prog-edit.button").text('View this program')
             pageBody.html(page)
 
-            // Validate that the browser supports Object.defineProperty (not ie8)
             Object.defineProperty({}, "foo", {get: function() { return "bar" }})
 
 
@@ -1202,16 +1246,81 @@ $(function () {
             alert("There was an error trying to run the program.")
         }
 
-        checkDialog(cb, $dialog, program)
-        screenshot(ev, haveScreenshot)
-        sendEvent(ev)
-        sendMessage(message)
-        findLine(line, w)
-        insertLineNumbers(errline)
-        receiveMessage(event)
+        function checkDialog(cb) {
+            if ($dialog) {
+                if (navigatingTo.program !== program || navigatingTo.page == "run") {
+                    $dialog.dialog("close")
+                } else {
+                    onNavigate.on( checkDialog )
+                }
+            }
+            cb()
+        }
+
+        function sendEvent(ev) {
+            if (ev.type == "keydown" || ev.type == "keyup") ev = { type:ev.type, which:ev.which }
+            else return;
+            if (ready)
+                sendMessage( JSON.stringify({event: ev}) )
+        }
+        // Wrapper for postMessage that queues messages while the iframe initializes
+        function sendMessage(message) {
+            if (unsentMessages === null)
+                untrusted_frame.get(0).contentWindow.postMessage(message, untrusted_origin)
+            else
+                unsentMessages.push(message)
+        }
+        
+        function receiveMessage(event) {
+            event = event.originalEvent // originalEvent is a jquery entity
+            if (event.origin !== untrusted_origin) return // check the origin
+            var message = JSON.parse(event.data)
+            var toType = function(obj) {
+                return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+            }
+
+            if (!ready) { // first-time message from run.js; check that first-time message content is {ready:true}
+                if (toType(message) != 'object') return
+                if (message.ready === undefined) return
+                if (message.ready !== true) return
+                delete message.ready
+                for (var m in message) return // message should now be empty; if not, return
+                ready = true
+                if (unsentMessages !== null) {
+                    var um = unsentMessages; unsentMessages = null
+                    for (var i = 0; i < um.length; i++)
+                        sendMessage(um[i])
+                }
+                if (isWritable) page.find(".prog-screenshot.button").removeClass("template").click( screenshot )
+            }
+            if (message.screenshot && isWritable && (!message.autoscreenshot || !haveScreenshot)) {
+                haveScreenshot = true
+                apiPut( {user:username, folder:folder, program:program}, { screenshot: message.screenshot }, function(){} )
+            }
+            if (message.error) {
+                var syntaxpattern = /(SyntaxError[^\d]*)([\d]*)/
+                var findsyntax = message.error.match(syntaxpattern)
+                if (findsyntax === null && parseVersionHeader(null).lang == 'javascript') {
+                    var u = message.error.split('\n')
+                    var m = u[0].match(/:(\d*):\d*:.*:(.*)/)
+                    if (m !== null) {
+                        message.error = 'Error in line '+(m[1]-5)+':'+m[2]
+                        message.traceback = u[1]+'\n'+u[2]
+                    }                    
+                }
+                if ($dialog) $dialog.dialog("close")
+                $dialog = $("#program-error-dialog").clone().removeClass("template")
+                $dialog.find(".error-details").text(message.error)
+                $dialog.find(".error-traceback").text(message.traceback)
+                $dialog.dialog({ width: "600px", autoOpen: true })
+            }
+        }
+        
+        
         
         console.log("loadUrl", route.loadURL)
     }
+
 
     pages.share = function(route) {
         var username = route.user, folder = route.folder, program = route.program
@@ -1235,7 +1344,6 @@ $(function () {
         apiGet( route, function (progData) {
             var header = parseVersionHeader(progData.source)
 
-            // TODO: Load compiler in iframe (like run page)
             if (!header.ok)
                 page.find(".embedWarning").text("This program cannot be embedded because its version declaration is unknown.")
             else {
@@ -1260,8 +1368,7 @@ $(function () {
                         alert("Failed to load compiler from package: " + compiler_url)
                         return
                     }
-	                
-                    // Look for mention of MathJax in program; don't import it if it's not used
+
                     var mathjax = ''
                     if (header.source.indexOf('MathJax') >= 0)
                     	mathjax = '<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>\n'
@@ -1306,9 +1413,6 @@ $(function () {
                     page.find(".embedSource").text( embedHTML )
                     page.find(".prog-download-html.button").prop("href", unroute(route, {page:"downloadHTML"}))
                     page.find(".prog-download-html.button").text('Download as HTML')
-                    // page.find(".prog-edit.button").prop("href", unroute(route, {page:"edit"}))
-                    // if (isWritable) page.find(".prog-edit.button").text('Edit this program')
-                    // else page.find(".prog-edit.button").text('View this program')
                 })
             }
         })
@@ -1352,14 +1456,9 @@ $(function () {
 
         pageBody.html(page)
 
-        // I (David Scherer) decided to process shortcuts myself instead of relying on ACE, because 
-        // ACE might not always have focus
         $(document).keydown( shortcutKey )
         onNavigate.on( function(cb) { $(document).off("keydown", shortcutKey); cb() } )
         function shortcutKey(ev) {
-            // Ctrl-1: Run
-            // I (David Scherer) haven't figured out how to change or disable keyboard shortcuts in ACE, 
-            // so Ctrl-R is not available - I used Ctrl-1 (like Ctrl-!)
             if (ev.ctrlKey && ev.keyCode == "1".charCodeAt(0)) {
                 ev.preventDefault()
                 navigate(run_link)
@@ -1369,13 +1468,12 @@ $(function () {
                 // If I don't pass anything for features, I get a new tab instead of a separate window
                 var features = "titlebar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes,toolbar=yes"
                 window.open("/#/", "GlowScriptRun", features)
-                window.open(run_link, "GlowScriptRun", features)
+                window.open(run_link+'/nolinks', "GlowScriptRun", features)
             }
         }
 
         apiGet( {user:username, folder:folder, program:program}, function (progData) {
         	page.find(".prog-datetime").text(date_to_string(progData.datetime))
-        	// program is the name of the file; progData.source is the program source in that file
         	var lang = parseVersionHeader(progData.source).lang
             if (!(lang == 'javascript' || lang == 'vpython')) lang = 'javascript'
             
@@ -1388,7 +1486,6 @@ $(function () {
 	                    function () { return editor.getValue() },
 	                    function (status) { page.find(".program-status").text(" ("+status+")") }
 	                )
-	                // Save immediately when navigating away from this page
 	                onNavigate.on(function (cb) { save(0, cb) })
 	                editor.change = function () {
 	                    save(1000)  // Save after 1 second of not typing
@@ -1409,7 +1506,6 @@ $(function () {
                         function () { return editor.getValue() },
                         function (status) { page.find(".program-status").text(" ("+status+")") }
                     )
-                    // Save immediately when navigating away from this page
                     onNavigate.on(function (cb) { save(0, cb) })
                     editor.onDidChangeModelContent('change', function () {
                         save(1000)  // Save after 1 second of not typing
@@ -1421,10 +1517,6 @@ $(function () {
     )}
     
     function iframefix() {
-        // When a mouse operation is started outside an iframe, cover all iframes on the page so
-        // that mousemove events don't get eaten by them.  Supposedly jquery UI 1.9 will have this
-        // feature, so maybe this can be removed in the future.
-    
         $(document).mousedown(function(ev) {
                     $("iframe").not(".iframefix").not(".template iframe").each( function() {
                 ("iframefix", this, this.offsetWidth, this.offsetHeight, this.width)
@@ -1447,131 +1539,3 @@ $(function () {
 
     window.onhashchange()
 })
-
-
-function checkDialog(cb, $dialog, program, navigatingTO) {
-    if ($dialog) {
-        if (navigatingTo.program !== program || navigatingTo.page == "run") {
-            $dialog.dialog("close")
-        } else {
-            // Keep the dialog on this page, but check again at the next transition
-            onNavigate.on( checkDialog )
-        }
-    }
-    cb()
-}
-
-function screenshot(ev) {
-    sendMessage(JSON.stringify({ screenshot: true }))
-    ev.preventDefault()
-}
-
-function sendEvent(ev) {
-    // Forward some key events to the iframe, since otherwise it might not get them depending on focus
-    // TODO: This is far from perfect.  The iframe receives many events twice, the right context menu is not blocked
-    // when a right-spin drag begins inside the iframe but ends outside, not all event data is forwarded, etc.
-    if (ev.type == "keydown" || ev.type == "keyup") ev = { type:ev.type, which:ev.which }
-    else return;
-    if (ready)
-        sendMessage( JSON.stringify({event: ev}) )
-}
-
-// Wrapper for postMessage that queues messages while the iframe initializes
-function sendMessage(message) {
-    if (unsentMessages === null)
-        untrusted_frame.get(0).contentWindow.postMessage(message, untrusted_origin)
-    else
-        unsentMessages.push(message)
-}
-
-function findLine(line,w) {
-    // w.indent is the indentation of javascript code by the GlowScript wrapping.
-    var indent = w.indent+' ' // Error messages indent an additional space
-    indent = new RegExp('^'+indent)
-    line = line.replace(indent, '')
-    var match = '', best = null, test
-    for (var n=0; n<sourceLines.length; n++) {
-        // Compiler changes "var a = 10" -> "a = 10" (with "var a" placed at top of program):
-        test = sourceLines[n].replace(/^var\s*/, '') 
-        for (var i=0; i<line.length; i++) {
-            if (i >= test.length) break
-            var c = line.charAt(i), t = test.charAt(i)
-            if (c != t) break
-        }
-        if (i > match.length) {
-            match = test.substring(0,i)
-            best = n
-        }
-    }
-    return best+1
-}
-
-function insertLineNumbers(errline) { // simplifed version of the same routine in compiler.js
-    var lines = sourceLines
-    var comment = false
-    var lineno = 0
-    for (var n=2; n<lines.length-1; n++) {
-        var m = lines[n].match(/^\s*(.*)/)
-        var line = m[1]
-        if (line.substr(0,3) == '###') {
-            comment = !comment
-            continue
-        }
-        if (comment) continue
-        if (line.length == 0 || line.charAt(0) == '#') continue
-        lineno += 3
-        if (lineno >= (errline-2)) return n
-    }
-    return -1
-}
-
-function receiveMessage(event) {
-    event = event.originalEvent // originalEvent is a jquery entity
-    // CAREFUL: We can't trust this data - it could be malicious! Incautiously splicing it into HTML could be deadly.
-    if (event.origin !== untrusted_origin) return // check the origin
-    var message = JSON.parse(event.data)
-        
-    // Angus Croll: javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-    // {...} "object"; [...] "array"; new Date "date"; /.../ "regexp"; Math "math"; JSON "json";
-    // Number "number"; String "string"; Boolean "boolean"; new ReferenceError) "error"
-    var toType = function(obj) {
-        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-    }
-
-    if (!ready) { // first-time message from run.js; check that first-time message content is {ready:true}
-        if (toType(message) != 'object') return
-        if (message.ready === undefined) return
-        if (message.ready !== true) return
-        delete message.ready
-        for (var m in message) return // message should now be empty; if not, return
-        ready = true
-        if (unsentMessages !== null) {
-            var um = unsentMessages; unsentMessages = null
-            for (var i = 0; i < um.length; i++)
-                sendMessage(um[i])
-        }
-        if (isWritable) page.find(".prog-screenshot.button").removeClass("template").click( screenshot )
-    }
-    if (message.screenshot && isWritable && (!message.autoscreenshot || !haveScreenshot)) {
-        haveScreenshot = true
-        apiPut( {user:username, folder:folder, program:program}, { screenshot: message.screenshot }, function(){} )
-    }
-    if (message.error) {
-        // Only Chrome (Aug. 2012) gives line numbers in error messages!
-        var syntaxpattern = /(SyntaxError[^\d]*)([\d]*)/
-        var findsyntax = message.error.match(syntaxpattern)
-        if (findsyntax === null && parseVersionHeader(null).lang == 'javascript') {
-            var u = message.error.split('\n')
-            var m = u[0].match(/:(\d*):\d*:.*:(.*)/)
-            if (m !== null) {
-                message.error = 'Error in line '+(m[1]-5)+':'+m[2]
-                message.traceback = u[1]+'\n'+u[2]
-            }                    
-        }
-        if ($dialog) $dialog.dialog("close")
-        $dialog = $("#program-error-dialog").clone().removeClass("template")
-        $dialog.find(".error-details").text(message.error)
-        $dialog.find(".error-traceback").text(message.traceback)
-        $dialog.dialog({ width: "600px", autoOpen: true })
-    }
-}
