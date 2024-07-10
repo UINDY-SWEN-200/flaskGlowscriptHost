@@ -85,6 +85,10 @@ def login():
     to the host we're actually testing.
     """
     redirect_uri = get_redirect_uri()
+    if routes.is_running_locally():
+        session['user'] = {'email':'local@user'}
+        return redirect('/')
+
     stateDict = {'dstHost': routes.get_auth_host_name(),
                  'salt': generate_token()}
     state = base64.b64encode(json.dumps(stateDict).encode()).decode()
