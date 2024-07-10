@@ -1,8 +1,7 @@
-# Flask Datastore Host
+# Flask Host
 
-This is a flask based Google DataStore Host. This is very nearly the same code that runs www.glowscript.org at the moment.
+This is a flask based host that can use Google DataStore or MongoDB to store user programs and folders. 
 
-The idea is to first get this working with the old auth/Datastore modules but configuring different guest runners.
+This is very nearly the same code that runs www.glowscript.org except it uses a translation layer between the application and the database.
 
-Then we'll factor out editing/storage to be more modular.
-
+The idea is to get this working with the old Google auth and Google Datastore or MongoDB but configuring different guest runners based on the progam source.
