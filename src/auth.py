@@ -67,11 +67,11 @@ def fillAuthNamespace():
     return oauth
 
 def is_logged_in():
-    return ('user' in session)  # or (routes.is_running_locally())
+    return ('user' in session) or (routes.is_running_locally())
 
 def get_user_info():
-    # if routes.is_running_locally():
-    #     return {'email': 'localuser@local.host'}
+    if routes.is_running_locally():
+        return {'email': 'localuser@local.host'}
 
     return session.get('user') or {}
 

@@ -15,19 +15,20 @@ services:
     command: gcloud beta emulators datastore start --host-port=0.0.0.0:8081 --project glowscript-dev
 
   flask:
-    image: us.gcr.io/glowscript-py38/glowscript-flask:latest
+    image: us.gcr.io/glowscript-py38/flaskdstorehost
     ports:
     - 8080:8080
     links:
      - datastore
     volumes:
      - .:/app
+     - /app/venv
      - datastore:/root/.config
     environment:
      - DATASTORE_EMULATOR_HOST=datastore:8081
      - FLASK_RUN_HOST=0.0.0.0
      - FLASK_RUN_PORT=8080
-    command: flask run
+    command: /app/venv/bin/flask run
 
 volumes:
   datastore:

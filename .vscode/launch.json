@@ -5,10 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Flask",
-            "type": "debugpy",
+            "name": "Python: Flask",
+            "type": "python",
             "request": "launch",
             "module": "flask",
+            "python": "${workspaceFolder}/venv/bin/python",
             "env": {
                 "FLASK_APP": "main.py",
                 "FLASK_DEBUG": "1"
@@ -19,7 +20,7 @@
                 "--no-reload"
             ],
             "jinja": true,
-            "autoStartBrowser": false
+            "justMyCode": true
         }
     ]
 }

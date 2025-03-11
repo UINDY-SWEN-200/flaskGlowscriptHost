@@ -42,6 +42,7 @@ import cgi
 import zipfile
 from io import BytesIO
 import json
+import requests
 
 from .ndb_models import Folder, User, Program
 from google.cloud import ndb
@@ -105,6 +106,12 @@ def idejs_static():
     """
     Load ide.js from the src directory, and cache it in module_cache.
     """
+    if os.environ.get("FLASK_DEBUG", 0):
+        ide_js = load_idejs()
+    else:
+        ide_js = module_cache
+
+    
     ide_js = module_cache.get('ide.js')
 
     if not ide_js:
@@ -119,6 +126,11 @@ def lib_static(filename):
     if is_running_locally():
         cache_timeout = 0
     return flask.send_from_directory('../lib', filename, max_age=cache_timeout)
+
+
+@app.route('/node_modules/<path:filename>')
+def node_static(filename):
+    return flask.send_from_directory('../node_modules', filename)
 
 
 @app.route('/package/<path:filename>')
@@ -147,6 +159,7 @@ def root():
     wasm_url = os.environ.get('PUBLIC_WASM_GUEST_URL')
     docs_home_url = os.environ.get('PUBLIC_DOCS_HOME')  # get docs home
     base_url = get_url_root()
+    #load_url = loadURL(url)
     return flask.render_template('index.html', sandbox_url=sandbox_url, docs_home_url=docs_home_url, base_url=base_url, wasm_url=wasm_url)
 
 #
