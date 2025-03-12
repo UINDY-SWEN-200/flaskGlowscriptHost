@@ -22,6 +22,10 @@ COPY requirements.txt $APP_HOME
 
 RUN python3 -m venv $APP_HOME/venv
 
+RUN apt -y update
+
+RUN apt -y install nodejs npm
+
 RUN $APP_HOME/venv/bin/pip install -U pip
 
 RUN $APP_HOME/venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -31,6 +35,8 @@ COPY . /app
 RUN chown -R pyuser:pyuser $APP_HOME
 
 USER pyuser
+
+RUN cd $APP_HOME && npm install
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
