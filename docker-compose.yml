@@ -1,5 +1,3 @@
-version: "2"
-
 #
 # This compose file can be used to run locally without using the locally installed python or dependencies
 #
@@ -15,7 +13,7 @@ services:
     command: gcloud beta emulators datastore start --host-port=0.0.0.0:8081 --project glowscript-dev
 
   flask:
-    image: flaskhost
+    image: flaskhost:latest
     ports:
     - 8080:8080
     links:
