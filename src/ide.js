@@ -1641,6 +1641,7 @@ $(function () {
                 var editor = monaco.editor.create(document.getElementById('editorContainer'), {
                     language: 'python',
                     value: progData.source,
+                    readOnly: !isWritable,
                 });
                 editor.layout({width: window.innerWidth, height: window.innerHeight})
 
@@ -1652,12 +1653,16 @@ $(function () {
             
                 if (isWritable) {
                     var save = saver( {user:username, folder:folder, program:program},
-                        function () { return editor.getValue() },
-                        function (status) { page.find(".program-status").text(" ("+status+")") }
+                        function () { 
+                            return editor.getValue() 
+                        },
+                        function (status) { 
+                            page.find(".program-status").text(" ("+status+")") 
+                        }
                     )
                     // Save immediately when navigating away from this page
                     onNavigate.on(function (cb) { save(0, cb) })
-                    editor.onDidChangeModelContent('change', function () {
+                    editor.onDidChangeModelContent(()=> {
                         save(1000)  // Save after 1 second of not typing
                     })
                 }
