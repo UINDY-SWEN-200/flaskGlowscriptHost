@@ -1509,9 +1509,11 @@ $(function () {
                     if (header.source.indexOf('MathJax') >= 0)
                     	mathjax = '<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>\n'
 
-					var embedScript = window.glowscript_compile(header.source,
-                    		{lang: header.lang, version: header.version.substr(0,3), run: false})
-                    var divid = "glowscript"
+                    var embedScript = window.glowscript_compile(header.source,
+                    		{lang: header.lang, version: header.version.substr(0,3), 
+                            run: false, nodictionary: header.nodictionary})
+                    console.log('ide 1343', embedScript)
+					var divid = "glowscript"
                     var remove = header.version==='0.3' ? '' : '.removeAttr("id")'
                     var main
                     var v = Number(header.version.substr(0,3))
@@ -1638,16 +1640,20 @@ $(function () {
 	                }
 	            }            	
             } else {
+                let wmargin = 40 // from right edge of text to right edge of window
+                let hmargin = 60 // from bottom of text to bottom of window
+
                 var editor = monaco.editor.create(document.getElementById('editorContainer'), {
                     language: 'python',
                     value: progData.source,
                     readOnly: !isWritable,
-                });
-                editor.layout({width: window.innerWidth, height: window.innerHeight})
+                })
+
+                editor.layout({width: window.innerWidth-wmargin, height: window.innerHeight-hmargin})
 
                 window.onresize = () => {
-                    var w = window.innerWidth;
-                    var h = window.innerHeight;
+                    var w = window.innerWidth - wmargin;
+                    var h = window.innerHeight- hmargin;
                     editor.layout({width: w, height: h});
                 };
             
@@ -1665,6 +1671,7 @@ $(function () {
                     editor.onDidChangeModelContent(()=> {
                         save(1000)  // Save after 1 second of not typing
                     })
+                    editor.focus() // Focus the editor when the page loads
                 }
             }
         }
